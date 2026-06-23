@@ -10,6 +10,7 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/*.egg-info/
 backend/.env
+backend/dev.db
 
 # OS
 .DS_Store
