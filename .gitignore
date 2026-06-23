@@ -11,6 +11,8 @@ backend/**/__pycache__/
 backend/*.egg-info/
 backend/.env
 backend/dev.db
+backend/storage/
+backend/app/ml_models/*.task
 
 # OS
 .DS_Store

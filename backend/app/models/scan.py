@@ -31,6 +31,7 @@ class BodyScanSession(UUIDPKMixin, CreatedAtMixin, Base):
     scan_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     category: Mapped[ScanCategory] = mapped_column(Enum(ScanCategory))
     status: Mapped[ScanStatus] = mapped_column(Enum(ScanStatus), default=ScanStatus.uploaded)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     images: Mapped[list["BodyScanImage"]] = relationship(back_populates="session")
 
