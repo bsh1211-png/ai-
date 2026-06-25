@@ -33,6 +33,10 @@ function OAuthCompleteInner() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pendingToken) return;
+    if (!acceptTerms || !acceptPrivacy) {
+      setError("이용약관과 개인정보 수집·이용 동의는 필수입니다");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -129,7 +133,11 @@ function OAuthCompleteInner() {
 
       {error && <p className="text-sm text-accent-red">{error}</p>}
 
-      <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={submitting || !acceptTerms || !acceptPrivacy}
+        className="btn-primary disabled:opacity-50"
+      >
         {submitting ? "처리 중..." : "가입 완료"}
       </button>
     </form>

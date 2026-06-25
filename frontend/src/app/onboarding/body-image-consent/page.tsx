@@ -21,7 +21,7 @@ export default function BodyImageConsentPage() {
     try {
       await api.post("/consents/body-image", { consented: true });
       await refresh();
-      router.push("/scan/new");
+      router.push("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "동의 처리 중 오류가 발생했습니다");
     } finally {

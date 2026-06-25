@@ -22,7 +22,7 @@ function CaptureInner() {
   const streamRef = useRef<MediaStream | null>(null);
   const [phase, setPhase] = useState<Phase>("loading_camera");
   const [angleIndex, setAngleIndex] = useState(0);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(5);
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -75,7 +75,7 @@ function CaptureInner() {
 
   const startCountdown = () => {
     setPhase("countdown");
-    setCountdown(3);
+    setCountdown(5);
   };
 
   const runCaptureAndUpload = async () => {
@@ -217,39 +217,11 @@ function CaptureInner() {
       )}
 
       {(phase === "ready" || phase === "countdown") && (
-        <>
-          <div className="absolute inset-x-0 top-6 text-center">
-            <span className="badge-info text-sm inline-block px-3 py-1 rounded-full font-display">
-              {ANGLE_LABEL[currentAngle] ?? currentAngle} 촬영 ({angleIndex + 1}/{angles.length})
-            </span>
-          </div>
-
-          {/* 인체 가이드 */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              className="relative"
-              style={{
-                width: "55%",
-                height: "70%",
-                border: "2px dashed rgba(0,229,255,0.5)",
-                borderRadius: "24px",
-              }}
-            >
-              {[
-                { top: -2, left: -2, borderWidth: "3px 0 0 3px" },
-                { top: -2, right: -2, borderWidth: "3px 3px 0 0" },
-                { bottom: -2, left: -2, borderWidth: "0 0 3px 3px" },
-                { bottom: -2, right: -2, borderWidth: "0 3px 3px 0" },
-              ].map((corner, i) => (
-                <div
-                  key={i}
-                  className="absolute w-6 h-6"
-                  style={{ ...corner, borderColor: "#00E5FF", borderStyle: "solid" }}
-                />
-              ))}
-            </div>
-          </div>
-        </>
+        <div className="absolute inset-x-0 top-6 text-center">
+          <span className="badge-info text-sm inline-block px-3 py-1 rounded-full font-display">
+            {ANGLE_LABEL[currentAngle] ?? currentAngle} 촬영 ({angleIndex + 1}/{angles.length})
+          </span>
+        </div>
       )}
 
       {phase === "countdown" && (
