@@ -52,22 +52,19 @@ export default function SignupPage() {
   if (devGuardianToken) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold">가입 완료 — 법정대리인 동의 필요</h1>
-        <p className="text-sm text-gray-600">
+        <h1 className="text-xl font-semibold text-text-primary">가입 완료 — 법정대리인 동의 필요</h1>
+        <p className="text-sm text-text-secondary">
           미성년자 계정은 법정대리인 동의가 완료되어야 신체 사진을 업로드할 수 있습니다. 실제
           서비스에서는 법정대리인 이메일로 동의 링크가 발송되지만, 개발 환경에서는 아래 버튼으로
           바로 테스트할 수 있습니다.
         </p>
-        <a
-          href={`/consents/guardian-confirm?token=${devGuardianToken}`}
-          className="inline-block min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm"
-        >
+        <a href={`/consents/guardian-confirm?token=${devGuardianToken}`} className="btn-primary inline-block">
           (개발용) 법정대리인 동의 페이지로 이동
         </a>
         <div>
           <button
             onClick={() => router.push("/onboarding/body-image-consent")}
-            className="text-sm text-gray-500 underline"
+            className="text-sm text-text-secondary underline"
           >
             나중에 하기
           </button>
@@ -78,64 +75,53 @@ export default function SignupPage() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <h1 className="text-xl font-semibold">회원가입</h1>
+      <h1 className="text-xl font-semibold text-text-primary">회원가입</h1>
 
       <SocialLoginButtons />
-      <div className="flex items-center gap-2 text-xs text-gray-400">
-        <div className="flex-1 border-t" />
+      <div className="flex items-center gap-2 text-xs text-text-dim">
+        <div className="flex-1 border-t" style={{ borderColor: "var(--color-border)" }} />
         또는 이메일로 가입
-        <div className="flex-1 border-t" />
+        <div className="flex-1 border-t" style={{ borderColor: "var(--color-border)" }} />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">이메일</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-        />
+        <label className="text-sm font-medium text-text-primary">이메일</label>
+        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full" />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">비밀번호 (8자 이상)</label>
+        <label className="text-sm font-medium text-text-primary">비밀번호 (8자 이상)</label>
         <input
           type="password"
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full"
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">생년월일</label>
+        <label className="text-sm font-medium text-text-primary">생년월일</label>
         <input
           type="date"
           required
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full"
         />
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-text-secondary">
           만 14세 미만은 가입할 수 없으며, 만 14~18세는 법정대리인 동의가 필요합니다.
         </p>
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">법정대리인 이메일 (미성년자만 필요)</label>
-        <input
-          type="email"
-          value={guardianEmail}
-          onChange={(e) => setGuardianEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-        />
+        <label className="text-sm font-medium text-text-primary">법정대리인 이메일 (미성년자만 필요)</label>
+        <input type="email" value={guardianEmail} onChange={(e) => setGuardianEmail(e.target.value)} className="w-full" />
       </div>
 
-      <div className="space-y-2 border rounded p-4 bg-gray-50">
-        <label className="flex items-start gap-2 text-sm">
+      <div className="card space-y-2">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
             type="checkbox"
             required
@@ -144,7 +130,7 @@ export default function SignupPage() {
           />
           <span>(필수) 이용약관에 동의합니다</span>
         </label>
-        <label className="flex items-start gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
             type="checkbox"
             required
@@ -156,7 +142,7 @@ export default function SignupPage() {
             제공 목적으로 수집합니다)
           </span>
         </label>
-        <label className="flex items-start gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
             type="checkbox"
             checked={acceptMarketing}
@@ -166,13 +152,9 @@ export default function SignupPage() {
         </label>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-accent-red">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
-      >
+      <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
         {submitting ? "처리 중..." : "가입하기"}
       </button>
     </form>

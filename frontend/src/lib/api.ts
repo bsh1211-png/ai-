@@ -103,6 +103,7 @@ export interface HeadlineStats {
   sync_rate: number | null;
   body_fat_estimate_pct: number | null;
   ab_definition_score: number | null;
+  symmetry_score: number | null;
   is_estimate: boolean;
 }
 

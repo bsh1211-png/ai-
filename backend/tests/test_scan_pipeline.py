@@ -78,6 +78,8 @@ def test_full_scan_pipeline_success(client, monkeypatch):
     report = report_resp.json()
     assert report["summary"] == "테스트 코멘트"
     assert exercise_id in report["recommended_exercise_ids"]
+    # symmetry_score는 AI 추정이 아니라 MediaPipe 실측 기반이라 실제 포즈 인식 결과에서 채워져야 함
+    assert report["headline_stats"]["symmetry_score"] is not None
 
     list_resp = client.get("/scans", headers=headers)
     assert len(list_resp.json()) == 1

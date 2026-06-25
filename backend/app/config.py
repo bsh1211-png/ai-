@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "swole-meter-api"
+    app_name: str = "swolemeter-api"
     environment: str = "development"
     database_url: str = "sqlite:///./dev.db"
 

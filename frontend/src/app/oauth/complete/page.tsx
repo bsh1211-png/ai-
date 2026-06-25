@@ -58,17 +58,14 @@ function OAuthCompleteInner() {
   };
 
   if (token) {
-    return <p className="text-sm text-gray-500">로그인 처리 중...</p>;
+    return <p className="text-sm text-text-secondary">로그인 처리 중...</p>;
   }
 
   if (devGuardianToken) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold">가입 완료 — 법정대리인 동의 필요</h1>
-        <a
-          href={`/consents/guardian-confirm?token=${devGuardianToken}`}
-          className="inline-block min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm"
-        >
+        <h1 className="text-xl font-semibold text-text-primary">가입 완료 — 법정대리인 동의 필요</h1>
+        <a href={`/consents/guardian-confirm?token=${devGuardianToken}`} className="btn-primary inline-block">
           (개발용) 법정대리인 동의 페이지로 이동
         </a>
       </div>
@@ -78,8 +75,8 @@ function OAuthCompleteInner() {
   if (!pendingToken) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-red-600">{error ?? "잘못된 접근입니다"}</p>
-        <a href="/login" className="text-sm underline">
+        <p className="text-sm text-accent-red">{error ?? "잘못된 접근입니다"}</p>
+        <a href="/login" className="text-sm underline text-text-secondary">
           로그인으로 돌아가기
         </a>
       </div>
@@ -88,39 +85,30 @@ function OAuthCompleteInner() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <h1 className="text-xl font-semibold">추가 정보 입력</h1>
-      <p className="text-sm text-gray-600">{email}로 소셜 로그인했습니다. 가입을 마치려면 정보를 입력해주세요.</p>
+      <h1 className="text-xl font-semibold text-text-primary">추가 정보 입력</h1>
+      <p className="text-sm text-text-secondary">
+        {email}로 소셜 로그인했습니다. 가입을 마치려면 정보를 입력해주세요.
+      </p>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">생년월일</label>
-        <input
-          type="date"
-          required
-          value={birthDate}
-          onChange={(e) => setBirthDate(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-        />
-        <p className="text-xs text-gray-500">
+        <label className="text-sm font-medium text-text-primary">생년월일</label>
+        <input type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full" />
+        <p className="text-xs text-text-secondary">
           만 14세 미만은 가입할 수 없으며, 만 14~18세는 법정대리인 동의가 필요합니다.
         </p>
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium">법정대리인 이메일 (미성년자만 필요)</label>
-        <input
-          type="email"
-          value={guardianEmail}
-          onChange={(e) => setGuardianEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-        />
+        <label className="text-sm font-medium text-text-primary">법정대리인 이메일 (미성년자만 필요)</label>
+        <input type="email" value={guardianEmail} onChange={(e) => setGuardianEmail(e.target.value)} className="w-full" />
       </div>
 
-      <div className="space-y-2 border rounded p-4 bg-gray-50">
-        <label className="flex items-start gap-2 text-sm">
+      <div className="card space-y-2">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input type="checkbox" required checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
           <span>(필수) 이용약관에 동의합니다</span>
         </label>
-        <label className="flex items-start gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
             type="checkbox"
             required
@@ -129,7 +117,7 @@ function OAuthCompleteInner() {
           />
           <span>(필수) 개인정보 수집·이용에 동의합니다</span>
         </label>
-        <label className="flex items-start gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
             type="checkbox"
             checked={acceptMarketing}
@@ -139,13 +127,9 @@ function OAuthCompleteInner() {
         </label>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-accent-red">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
-      >
+      <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
         {submitting ? "처리 중..." : "가입 완료"}
       </button>
     </form>

@@ -154,12 +154,9 @@ function CaptureInner() {
 
   if (phase === "error") {
     return (
-      <div className="space-y-4 text-center">
-        <p className="text-red-600 text-sm">{errorMessage}</p>
-        <button
-          onClick={() => router.push("/scan/new")}
-          className="min-h-11 rounded-xl border px-6 py-3 text-sm"
-        >
+      <div className="space-y-4 text-center pt-10">
+        <p className="text-accent-red text-sm">{errorMessage}</p>
+        <button onClick={() => router.push("/scan/new")} className="btn-secondary">
           처음으로
         </button>
       </div>
@@ -168,20 +165,17 @@ function CaptureInner() {
 
   if (phase === "done") {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-6">
-        <div className="bg-white rounded-2xl p-8 text-center space-y-6 max-w-xs w-full">
-          <p className="text-2xl font-bold text-gray-900">분석 완료! 🔥</p>
+      <div
+        className="fixed inset-0 flex items-center justify-center z-50 px-6"
+        style={{ background: "rgba(10,10,15,0.85)" }}
+      >
+        <div className="card text-center space-y-6 max-w-xs w-full py-8">
+          <p className="text-2xl font-bold font-display gradient-score">분석 완료! 🔥</p>
           <div className="flex flex-col gap-3">
-            <button
-              onClick={() => router.push(`/scan/${sessionId}`)}
-              className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm font-medium"
-            >
+            <button onClick={() => router.push(`/scan/${sessionId}`)} className="btn-primary">
               결과 보기
             </button>
-            <button
-              onClick={() => router.push("/scan/new")}
-              className="min-h-11 rounded-xl border px-4 py-3 text-sm font-medium"
-            >
+            <button onClick={() => router.push("/scan/new")} className="btn-secondary">
               재분석
             </button>
           </div>
@@ -191,7 +185,7 @@ function CaptureInner() {
   }
 
   return (
-    <div className="-mx-6 -my-8 relative bg-black" style={{ height: "calc(100vh - 57px)" }}>
+    <div className="fixed left-0 right-0 bottom-0 top-16 z-30" style={{ background: "var(--color-bg)" }}>
       <video
         ref={videoRef}
         autoPlay
@@ -218,21 +212,52 @@ function CaptureInner() {
 
       {phase === "loading_camera" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-white text-sm">카메라를 불러오는 중...</p>
+          <p className="text-text-secondary text-sm">카메라를 불러오는 중...</p>
         </div>
       )}
 
       {(phase === "ready" || phase === "countdown") && (
-        <div className="absolute inset-x-0 top-6 text-center">
-          <p className="text-white text-sm bg-black/40 inline-block px-3 py-1 rounded-full">
-            {ANGLE_LABEL[currentAngle] ?? currentAngle} 촬영 ({angleIndex + 1}/{angles.length})
-          </p>
-        </div>
+        <>
+          <div className="absolute inset-x-0 top-6 text-center">
+            <span className="badge-info text-sm inline-block px-3 py-1 rounded-full font-display">
+              {ANGLE_LABEL[currentAngle] ?? currentAngle} 촬영 ({angleIndex + 1}/{angles.length})
+            </span>
+          </div>
+
+          {/* 인체 가이드 */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className="relative"
+              style={{
+                width: "55%",
+                height: "70%",
+                border: "2px dashed rgba(0,229,255,0.5)",
+                borderRadius: "24px",
+              }}
+            >
+              {[
+                { top: -2, left: -2, borderWidth: "3px 0 0 3px" },
+                { top: -2, right: -2, borderWidth: "3px 3px 0 0" },
+                { bottom: -2, left: -2, borderWidth: "0 0 3px 3px" },
+                { bottom: -2, right: -2, borderWidth: "0 3px 3px 0" },
+              ].map((corner, i) => (
+                <div
+                  key={i}
+                  className="absolute w-6 h-6"
+                  style={{ ...corner, borderColor: "#00E5FF", borderStyle: "solid" }}
+                />
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {phase === "countdown" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-white font-bold" style={{ fontSize: "clamp(4rem, 25vw, 10rem)" }}>
+          <p
+            className="font-display font-extrabold"
+            style={{ fontSize: "clamp(4rem, 25vw, 10rem)", color: "#00E5FF" }}
+          >
             {countdown === 0 ? "📸" : countdown}
           </p>
         </div>
@@ -242,9 +267,14 @@ function CaptureInner() {
         <div className="absolute inset-x-0 bottom-10 flex justify-center px-6">
           <button
             onClick={startCountdown}
-            className="min-h-14 min-w-44 rounded-full bg-white text-black px-8 py-4 text-base font-semibold active:scale-95 transition"
+            aria-label="촬영 시작"
+            className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition"
+            style={{ border: "4px solid #00E5FF" }}
           >
-            시작하기
+            <span
+              className="w-14 h-14 rounded-full"
+              style={{ background: "linear-gradient(135deg, #00E5FF, #A855F7)" }}
+            />
           </button>
         </div>
       )}

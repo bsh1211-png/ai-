@@ -21,16 +21,21 @@ def set_goal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BodyGoal:
-    db.query(BodyGoal).filter(BodyGoal.user_id == current_user.id, BodyGoal.is_active.is_(True)).update(
-        {"is_active": False}
+    # 활성 목표가 있으면 그 자리에서 텍스트만 갱신(워너비 사진 연결을 유지),
+    # 없으면 새로 만든다. 매번 새 row를 만들면 이미 업로드된 사진과의 연결이 끊어진다.
+    goal = (
+        db.query(BodyGoal)
+        .filter(BodyGoal.user_id == current_user.id, BodyGoal.is_active.is_(True))
+        .order_by(BodyGoal.created_at.desc())
+        .first()
     )
-    goal = BodyGoal(
-        user_id=current_user.id,
-        goal_type=GoalType.text,
-        goal_text=payload.goal_text,
-        is_active=True,
-    )
-    db.add(goal)
+    if goal is None:
+        goal = BodyGoal(user_id=current_user.id, goal_type=GoalType.text, is_active=True)
+        db.add(goal)
+
+    goal.goal_text = payload.goal_text
+    if goal.reference_image_path:
+        goal.goal_type = GoalType.combined
     db.commit()
     db.refresh(goal)
     return goal

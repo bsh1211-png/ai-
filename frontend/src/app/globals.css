@@ -1,25 +1,123 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-bg: #0a0a0f;
+  --color-surface: #13131f;
+  --color-surface-hover: #1a1a2e;
+  --color-border: #252540;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-accent-cyan: #00e5ff;
+  --color-accent-orange: #ff6b35;
+  --color-accent-green: #39ff14;
+  --color-accent-red: #ff3b5c;
+  --color-accent-purple: #a855f7;
 
-/* 다크모드에서 --foreground가 밝아지면 고정 라이트 배경(bg-white 등) 위 텍스트가 같은 색이 되어
-   안 보이는 문제가 있었음. 이 앱은 아직 다크모드 전용 스타일을 따로 설계하지 않았으므로
-   라이트 테마로 고정한다. */
+  --color-text-primary: #e8e8ec;
+  --color-text-secondary: #8888a0;
+  --color-text-dim: #555570;
+
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Outfit", "Pretendard", sans-serif;
+}
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  letter-spacing: -0.2px;
+}
+
+.font-display,
+.score-number,
+.stat-value,
+.logo-text {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.gradient-cta {
+  background: linear-gradient(135deg, #00e5ff, #a855f7);
+}
+
+.gradient-score {
+  background: linear-gradient(135deg, #00e5ff, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 공통 컴포넌트 */
+.btn-primary {
+  background: linear-gradient(135deg, #00e5ff, #a855f7);
+  color: #0a0a0f;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  font-size: 16px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 44px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+  min-height: 44px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+input,
+textarea,
+select {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-accent-cyan);
+}
+
+.badge-warning {
+  background: rgba(255, 107, 53, 0.12);
+  color: #ff6b35;
+  border: 1px solid rgba(255, 107, 53, 0.18);
+}
+.badge-success {
+  background: rgba(57, 255, 20, 0.12);
+  color: #39ff14;
+  border: 1px solid rgba(57, 255, 20, 0.18);
+}
+.badge-info {
+  background: rgba(0, 229, 255, 0.12);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.18);
 }
 
 @keyframes scan-laser {
@@ -36,7 +134,7 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #22d3ee, transparent);
-  box-shadow: 0 0 16px 3px #22d3ee;
+  background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+  box-shadow: 0 0 16px 3px #00e5ff;
   animation: scan-laser 1.6s ease-in-out infinite alternate;
 }

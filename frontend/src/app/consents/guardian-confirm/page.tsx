@@ -31,18 +31,18 @@ function GuardianConfirmInner() {
   }, [token]);
 
   return (
-    <div className="space-y-4 max-w-md">
-      <h1 className="text-xl font-semibold">법정대리인 동의</h1>
-      {status === "loading" && <p className="text-sm text-gray-600">처리 중...</p>}
-      {status === "done" && <p className="text-sm text-green-700">{message}</p>}
-      {status === "error" && <p className="text-sm text-red-600">{message}</p>}
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold text-text-primary">법정대리인 동의</h1>
+      {status === "loading" && <p className="text-sm text-text-secondary">처리 중...</p>}
+      {status === "done" && <p className="text-sm text-accent-green">{message}</p>}
+      {status === "error" && <p className="text-sm text-accent-red">{message}</p>}
     </div>
   );
 }
 
 export default function GuardianConfirmPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">불러오는 중...</p>}>
+    <Suspense fallback={<p className="text-sm text-text-secondary">불러오는 중...</p>}>
       <GuardianConfirmInner />
     </Suspense>
   );

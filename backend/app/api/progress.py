@@ -1,6 +1,7 @@
+import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -42,3 +43,17 @@ def list_progress_logs(
         .order_by(ProgressLog.logged_at.desc())
         .all()
     )
+
+
+@router.delete("/{log_id}", status_code=status.HTTP_200_OK)
+def delete_progress_log(
+    log_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    log = db.get(ProgressLog, log_id)
+    if log is None or log.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="기록을 찾을 수 없습니다")
+    db.delete(log)
+    db.commit()
+    return {"status": "deleted"}

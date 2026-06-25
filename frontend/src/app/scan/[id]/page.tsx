@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, exerciseImageUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
+import { muscleLabel } from "@/lib/muscle-labels";
+import { generateShareCardBlob, shareOrDownloadCard } from "@/lib/share-card";
 
 const STATUS_LABEL: Record<string, string> = {
   uploaded: "업로드됨 (분석 대기)",
@@ -12,33 +14,31 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "분석 실패",
 };
 
-function StatBlock({
-  label,
-  value,
-  suffix,
-  sad,
-}: {
-  label: string;
-  value: number | null;
-  suffix: string;
-  sad: boolean;
-}) {
-  if (value === null) {
-    return (
-      <div className="flex-1 text-center py-4">
-        <p className="text-xs text-white/60">{label}</p>
-        <p className="text-white/40 text-sm mt-2">데이터 없음</p>
-      </div>
-    );
-  }
+function ScoreColumn({ label, value, suffix, gradient, color }: { label: string; value: number | null; suffix: string; gradient?: boolean; color?: string }) {
   return (
-    <div className="flex-1 text-center py-4">
-      <p className="text-xs text-white/60 mb-1">{label}</p>
-      <p className="font-extrabold text-white leading-none" style={{ fontSize: "clamp(2rem, 11vw, 3.5rem)" }}>
-        {value}
-        <span style={{ fontSize: "clamp(1rem, 5vw, 1.5rem)" }}>{suffix}</span>
-        {sad && <span className="ml-1">ㅠㅠ</span>}
-      </p>
+    <div className="flex-1 text-center py-2">
+      <p className="text-xs text-text-secondary mb-1">{label}</p>
+      {value === null ? (
+        <p className="text-text-dim text-sm">데이터 없음</p>
+      ) : (
+        <p
+          className="font-display font-black leading-none"
+          style={{
+            fontSize: "clamp(2.2rem, 12vw, 3.5rem)",
+            ...(gradient
+              ? {
+                  background: "linear-gradient(135deg, #00E5FF, #A855F7)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }
+              : { color }),
+          }}
+        >
+          {value}
+          <span style={{ fontSize: "clamp(1rem, 5vw, 1.4rem)" }}>{suffix}</span>
+        </p>
+      )}
     </div>
   );
 }
@@ -48,6 +48,7 @@ export default function ScanDetailPage() {
   const [session, setSession] = useState<ScanSession | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,30 +87,41 @@ export default function ScanDetailPage() {
     ).then(setExercises);
   }, [report]);
 
-  if (!session) return <p className="text-sm text-gray-500">불러오는 중...</p>;
+  const handleShare = async () => {
+    if (!report?.headline_stats || !session) return;
+    setSharing(true);
+    try {
+      const blob = await generateShareCardBlob(
+        report.headline_stats,
+        new Date(session.scan_date).toLocaleDateString("ko-KR")
+      );
+      if (blob) await shareOrDownloadCard(blob, `swolemeter-${session.id}.png`);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  if (!session) return <p className="text-sm text-text-secondary">불러오는 중...</p>;
 
   const stats = report?.headline_stats;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">분석 결과</h1>
-        <p className="text-sm text-gray-500">{STATUS_LABEL[session.status] ?? session.status}</p>
+        <h1 className="text-xl font-semibold text-text-primary">분석 결과</h1>
+        <p className="text-sm text-text-secondary">{STATUS_LABEL[session.status] ?? session.status}</p>
       </div>
 
       {session.status === "processing" && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-text-secondary">
           AI가 사진을 분석하고 있습니다. 잠시만 기다려주세요 (자동으로 갱신됩니다)...
         </p>
       )}
 
       {session.status === "failed" && (
         <div className="space-y-3">
-          <p className="text-sm text-red-600">{session.error_message ?? "분석에 실패했습니다"}</p>
-          <Link
-            href="/scan/new"
-            className="inline-block min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm font-medium"
-          >
+          <p className="text-sm text-accent-red">{session.error_message ?? "분석에 실패했습니다"}</p>
+          <Link href="/scan/new" className="btn-primary inline-block text-center">
             다시 촬영하기
           </Link>
         </div>
@@ -117,50 +129,83 @@ export default function ScanDetailPage() {
 
       {report && stats && (
         <div className="space-y-8">
-          <div className="rounded-2xl border bg-gradient-to-br from-gray-900 to-gray-700 px-2 py-2">
-            <div className="flex divide-x divide-white/20">
-              <StatBlock
-                label="일반인 대비 상위"
-                value={stats.percentile}
-                suffix="%"
-                sad={stats.percentile !== null && stats.percentile >= 50}
-              />
-              <StatBlock
-                label="목표 몸과 싱크로율"
-                value={stats.sync_rate}
-                suffix="%"
-                sad={stats.sync_rate !== null && stats.sync_rate < 50}
-              />
+          {/* 스코어 카드 */}
+          <div className="card relative overflow-hidden">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 0%, rgba(0,229,255,0.12), transparent 70%)",
+              }}
+            />
+            <div className="relative flex divide-x" style={{ borderColor: "var(--color-border)" }}>
+              <ScoreColumn label="일반인 대비 상위" value={stats.percentile} suffix="%" gradient />
+              <ScoreColumn label="목표 싱크율" value={stats.sync_rate} suffix="%" color="#FF6B35" />
+            </div>
+            <p className="relative text-center text-[11px] text-text-dim mt-2">
+              AI가 사진을 보고 추정한 엔터테인먼트용 수치이며 실제 측정값이 아닙니다
+            </p>
+          </div>
+
+          {/* 수치 뱃지 행 */}
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="card py-3">
+              <p className="text-xs text-text-secondary mb-1">체지방률</p>
+              <p className="font-display font-extrabold text-xl" style={{ color: "#39FF14" }}>
+                {stats.body_fat_estimate_pct ?? "-"}%
+              </p>
+            </div>
+            <div className="card py-3">
+              <p className="text-xs text-text-secondary mb-1">복근 선명도</p>
+              <p className="font-display font-extrabold text-xl" style={{ color: "#FF6B35" }}>
+                {stats.ab_definition_score ?? "-"}/10
+              </p>
+            </div>
+            <div className="card py-3">
+              <p className="text-xs text-text-secondary mb-1">대칭 점수</p>
+              <p className="font-display font-extrabold text-xl" style={{ color: "#00E5FF" }}>
+                {stats.symmetry_score ?? "-"}
+              </p>
             </div>
           </div>
 
-          <div className="rounded-xl border p-4 bg-white">
-            <p className="text-sm font-semibold text-gray-900 mb-2">신체 총평</p>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{report.summary}</p>
-            <div className="flex gap-4 mt-3 text-xs text-gray-600">
-              <span>추정 체지방률 {stats.body_fat_estimate_pct ?? "-"}%</span>
-            </div>
+          {/* 신체 총평 */}
+          <div className="card">
+            <p className="text-sm font-semibold text-text-primary mb-2">신체 총평</p>
+            <p className="text-sm text-text-secondary whitespace-pre-wrap">{report.summary}</p>
           </div>
 
+          {/* 보완이 필요한 부위 */}
           <div>
-            <p className="text-sm font-semibold text-gray-900 mb-2">보완이 필요한 부위</p>
+            <p className="text-sm font-semibold text-text-primary mb-2">보완이 필요한 부위</p>
             <ul className="space-y-2">
-              {report.weak_points.map((wp, i) => (
-                <li key={i} className="border rounded-xl p-3 text-sm bg-white">
-                  <span className="font-medium text-gray-900">{wp.part}</span>{" "}
-                  <span className="text-xs text-gray-500">({wp.severity})</span>
-                  <p className="text-gray-700 mt-1">{wp.comment}</p>
-                </li>
-              ))}
+              {report.weak_points.map((wp, i) => {
+                const isMinor = wp.severity === "low";
+                const barColor = isMinor ? "#39FF14" : "#FF6B35";
+                return (
+                  <li key={i} className="card relative pl-5 overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: barColor }} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-text-primary">{muscleLabel(wp.part)}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-md ${isMinor ? "badge-success" : "badge-warning"}`}
+                      >
+                        {isMinor ? "미세 조정" : "보완 필요"}
+                      </span>
+                    </div>
+                    <p className="text-text-secondary text-sm mt-1">{wp.comment}</p>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
           {exercises.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-gray-900 mb-3">추천 운동</p>
+              <p className="text-sm font-semibold text-text-primary mb-3">추천 운동</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {exercises.map((ex) => (
-                  <div key={ex.id} className="border rounded-xl p-3 space-y-2 bg-white">
+                  <div key={ex.id} className="card space-y-2">
                     {ex.image_paths[0] && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -169,8 +214,8 @@ export default function ScanDetailPage() {
                         className="w-full h-32 object-cover rounded-lg"
                       />
                     )}
-                    <p className="text-sm font-medium text-gray-900">{ex.name_ko || ex.name_en}</p>
-                    <p className="text-xs text-gray-500">{ex.primary_muscles.join(", ")}</p>
+                    <p className="text-sm font-medium text-text-primary">{ex.name_ko || ex.name_en}</p>
+                    <p className="text-xs text-text-secondary">{ex.primary_muscles.join(", ")}</p>
                     {ex.youtube_video_ids.slice(0, 2).map((videoId) => (
                       <iframe
                         key={videoId}
@@ -188,22 +233,33 @@ export default function ScanDetailPage() {
 
           {report.recommended_routine && report.recommended_routine.items.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-gray-900 mb-3">추천 루틴</p>
-              <div className="border rounded-xl bg-white divide-y">
+              <p className="text-sm font-semibold text-text-primary mb-3">추천 루틴</p>
+              <div className="card divide-y" style={{ padding: 0 }}>
                 {report.recommended_routine.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-3 text-sm">
+                  <div key={i} className="flex items-center justify-between px-5 py-3 text-sm" style={{ borderColor: "var(--color-border)" }}>
                     <div>
-                      <p className="font-medium text-gray-900">{item.exercise_name}</p>
-                      <p className="text-xs text-gray-500">{item.target_part} 타겟</p>
+                      <p className="font-medium text-text-primary">{item.exercise_name}</p>
+                      <p className="text-xs" style={{ color: "#00E5FF" }}>
+                        {muscleLabel(item.target_part)} 타겟
+                      </p>
                     </div>
-                    <p className="text-gray-700 font-medium">
+                    <span className="badge-info text-xs px-2 py-1 rounded-md font-display">
                       {item.sets}세트 × {item.reps}회
-                    </p>
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          <div className="space-y-3 pt-2">
+            <button onClick={handleShare} disabled={sharing} className="btn-primary disabled:opacity-50">
+              {sharing ? "이미지 생성 중..." : "📤 결과 공유하기"}
+            </button>
+            <Link href="/scan/new" className="btn-secondary block text-center">
+              다시 분석하기
+            </Link>
+          </div>
         </div>
       )}
     </div>

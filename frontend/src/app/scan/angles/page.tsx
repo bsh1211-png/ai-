@@ -3,17 +3,24 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError, type ScanSession } from "@/lib/api";
+import { CATEGORY_KO } from "@/lib/muscle-labels";
 
-const CATEGORY_LABEL: Record<string, string> = {
-  full_body: "전신",
-  upper: "상체",
-  lower: "하체",
-};
-
-const ANGLE_LABEL: Record<string, Record<string, string>> = {
-  full_body: { front: "전면", back: "후면", side: "측면" },
-  upper: { front: "상체 전면", back: "상체 후면", side: "상체 측면" },
-  lower: { front: "하체 전면", back: "하체 후면", side: "하체 측면" },
+const ANGLE_OPTIONS: Record<string, { value: string; label: string; desc: string }[]> = {
+  full_body: [
+    { value: "front", label: "전면", desc: "정면에서 바라본 모습" },
+    { value: "back", label: "후면", desc: "뒤에서 바라본 모습" },
+    { value: "side", label: "측면", desc: "옆에서 바라본 모습" },
+  ],
+  upper: [
+    { value: "front", label: "상체 전면", desc: "정면에서 바라본 상체" },
+    { value: "back", label: "상체 후면", desc: "뒤에서 바라본 상체" },
+    { value: "side", label: "상체 측면", desc: "옆에서 바라본 상체" },
+  ],
+  lower: [
+    { value: "front", label: "하체 전면", desc: "정면에서 바라본 하체" },
+    { value: "back", label: "하체 후면", desc: "뒤에서 바라본 하체" },
+    { value: "side", label: "하체 측면", desc: "옆에서 바라본 하체" },
+  ],
 };
 
 const DEFAULT_CHECKED: Record<string, string[]> = {
@@ -26,7 +33,7 @@ function AnglesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") || "full_body";
-  const angleLabels = ANGLE_LABEL[category] ?? ANGLE_LABEL.full_body;
+  const options = ANGLE_OPTIONS[category] ?? ANGLE_OPTIONS.full_body;
 
   const [selected, setSelected] = useState<string[]>(DEFAULT_CHECKED[category] ?? ["front"]);
   const [error, setError] = useState<string | null>(null);
@@ -56,30 +63,41 @@ function AnglesInner() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">{CATEGORY_LABEL[category]} — 어떤 각도를 찍을까요?</h1>
-      <div className="grid grid-cols-1 gap-3">
-        {Object.entries(angleLabels).map(([angle, label]) => (
-          <label
-            key={angle}
-            className="flex items-center gap-3 rounded-xl border px-4 py-4 min-h-11 text-sm font-medium"
-          >
-            <input
-              type="checkbox"
-              className="w-5 h-5"
-              checked={selected.includes(angle)}
-              onChange={() => toggle(angle)}
-            />
-            {label}
-          </label>
-        ))}
+      <h1 className="text-xl font-semibold text-text-primary">
+        {CATEGORY_KO[category]} — 어떤 각도를 찍을까요?
+      </h1>
+      <div className="space-y-3">
+        {options.map((opt) => {
+          const checked = selected.includes(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggle(opt.value)}
+              className="w-full flex items-center gap-3 rounded-2xl border px-4 py-4 min-h-11 text-left"
+              style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
+            >
+              <span
+                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-xs font-bold"
+                style={{
+                  background: checked ? "var(--color-accent-cyan)" : "transparent",
+                  border: checked ? "none" : "1px solid var(--color-border)",
+                  color: "#0A0A0F",
+                }}
+              >
+                {checked && "✓"}
+              </span>
+              <div>
+                <p className="text-sm font-medium text-text-primary">{opt.label}</p>
+                <p className="text-xs text-text-secondary mt-0.5">{opt.desc}</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        onClick={handleNext}
-        disabled={busy}
-        className="w-full min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm font-medium disabled:opacity-50"
-      >
-        {busy ? "준비 중..." : "다음"}
+      {error && <p className="text-sm text-accent-red">{error}</p>}
+      <button onClick={handleNext} disabled={busy} className="btn-primary disabled:opacity-50">
+        {busy ? "준비 중..." : "촬영 시작"}
       </button>
     </div>
   );

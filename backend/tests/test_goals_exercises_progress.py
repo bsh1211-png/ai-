@@ -32,6 +32,27 @@ def test_goal_set_and_get_active(client):
 
     active = client.get("/goals/active", headers=headers)
     assert active.json()["goal_text"] == "어깨가 넓은 몸"
+    assert active.json()["id"] == resp.json()["id"]  # 같은 row를 갱신해야 함
+
+
+def test_goal_text_update_preserves_reference_image(client, monkeypatch):
+    headers = _signup(client, "goalpreserve@example.com")
+    goal = client.post("/goals", json={"goal_text": "초기 목표"}, headers=headers).json()
+
+    monkeypatch.setattr(vision_service, "describe_goal_image", lambda db, image_bytes: "")
+    with open(FIXTURE_IMAGE, "rb") as f:
+        client.post(
+            f"/goals/{goal['id']}/reference-image",
+            headers=headers,
+            data={"consent": "true"},
+            files={"file": ("wannabe.jpg", f, "image/jpeg")},
+        )
+
+    updated = client.post("/goals", json={"goal_text": "텍스트만 수정"}, headers=headers).json()
+    assert updated["id"] == goal["id"]
+    assert updated["goal_text"] == "텍스트만 수정"
+    assert updated["reference_image_path"] is not None
+    assert updated["goal_type"] == "combined"
 
 
 def test_progress_log_create_and_list(client):
@@ -112,3 +133,23 @@ def test_goal_reference_image_requires_consent(client):
             files={"file": ("wannabe.jpg", f, "image/jpeg")},
         )
     assert resp.status_code == 400
+
+
+def test_progress_log_delete(client):
+    headers = _signup(client, "progressdelete@example.com")
+    log = client.post("/progress", json={"weight_kg": 70.0}, headers=headers).json()
+
+    delete_resp = client.delete(f"/progress/{log['id']}", headers=headers)
+    assert delete_resp.status_code == 200
+
+    list_resp = client.get("/progress", headers=headers)
+    assert list_resp.json() == []
+
+
+def test_progress_log_delete_blocks_other_users(client):
+    headers_a = _signup(client, "progressowner@example.com")
+    headers_b = _signup(client, "progressother@example.com")
+    log = client.post("/progress", json={"weight_kg": 70.0}, headers=headers_a).json()
+
+    delete_resp = client.delete(f"/progress/{log['id']}", headers=headers_b)
+    assert delete_resp.status_code == 404

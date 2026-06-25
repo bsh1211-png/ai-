@@ -30,9 +30,9 @@ export default function BodyImageConsentPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-md">
-      <h1 className="text-xl font-semibold">카메라/신체 사진 사용 동의</h1>
-      <div className="space-y-3 text-sm text-gray-700">
+    <div className="space-y-5">
+      <h1 className="text-xl font-semibold text-text-primary">카메라/신체 사진 사용 동의</h1>
+      <div className="space-y-3 text-sm text-text-secondary">
         <p>
           신체 분석 기능을 사용하려면 사진(직접 촬영 또는 업로드)이 필요합니다. 동의하시면
           다음과 같이 사진이 사용됩니다.
@@ -45,21 +45,13 @@ export default function BodyImageConsentPage() {
         </ul>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-accent-red">{error}</p>}
 
       <div className="flex gap-3">
-        <button
-          onClick={() => handleConsent(true)}
-          disabled={submitting}
-          className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
-        >
+        <button onClick={() => handleConsent(true)} disabled={submitting} className="btn-primary flex-1">
           동의하고 계속하기
         </button>
-        <button
-          onClick={() => handleConsent(false)}
-          disabled={submitting}
-          className="min-h-11 rounded-xl border px-4 py-3 text-sm"
-        >
+        <button onClick={() => handleConsent(false)} disabled={submitting} className="btn-secondary flex-1">
           동의하지 않음
         </button>
       </div>

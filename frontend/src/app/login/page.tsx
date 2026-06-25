@@ -33,41 +33,31 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-sm">
-      <h1 className="text-xl font-semibold">로그인</h1>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <h1 className="text-xl font-semibold text-text-primary">로그인</h1>
       <div className="space-y-1">
-        <label className="text-sm font-medium">이메일</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-        />
+        <label className="text-sm font-medium text-text-primary">이메일</label>
+        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full" />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-medium">비밀번호</label>
+        <label className="text-sm font-medium text-text-primary">비밀번호</label>
         <input
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
-      >
+      {error && <p className="text-sm text-accent-red">{error}</p>}
+      <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
         {submitting ? "처리 중..." : "로그인"}
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-gray-400">
-        <div className="flex-1 border-t" />
+      <div className="flex items-center gap-2 text-xs text-text-dim">
+        <div className="flex-1 border-t" style={{ borderColor: "var(--color-border)" }} />
         또는
-        <div className="flex-1 border-t" />
+        <div className="flex-1 border-t" style={{ borderColor: "var(--color-border)" }} />
       </div>
       <SocialLoginButtons />
     </form>

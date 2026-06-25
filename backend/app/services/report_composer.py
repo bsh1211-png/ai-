@@ -26,6 +26,21 @@ def _build_routine(grouped: list[tuple[dict, list]]) -> dict:
     return {"name": "보완 부위 집중 루틴", "items": items}
 
 
+def _average_symmetry_score(pose_summary: dict) -> int | None:
+    """MediaPipe로 실제 측정된 좌우 대칭성(0~1)의 평균을 0~100 점수로 환산.
+
+    헤드라인 스탯의 나머지 값들과 달리 AI 추정이 아니라 실측 기반 값이다.
+    """
+    scores = [
+        img["limb_symmetry_score"]
+        for img in pose_summary.get("images", [])
+        if img.get("limb_symmetry_score") is not None
+    ]
+    if not scores:
+        return None
+    return round(sum(scores) / len(scores) * 100)
+
+
 def compose_report(
     db: Session,
     session_id,
@@ -48,13 +63,16 @@ def compose_report(
     if goal is not None:
         goal_comparison = {"goal_type": goal.goal_type.value, "goal_text": goal.goal_text}
 
+    headline_stats = dict(vision_result.get("headline_stats") or {})
+    headline_stats["symmetry_score"] = _average_symmetry_score(pose_summary)
+
     report = AnalysisReport(
         session_id=session_id,
         summary=vision_result.get("overall_comment", ""),
         weak_points=weak_points,
         recommended_exercise_ids=recommended_exercise_ids,
         goal_comparison=goal_comparison,
-        headline_stats=vision_result.get("headline_stats"),
+        headline_stats=headline_stats,
         recommended_routine=recommended_routine,
     )
     db.add(report)
