@@ -50,11 +50,6 @@ function RecentAnalysisCard() {
               체지방 {stats.body_fat_estimate_pct}%
             </span>
           )}
-          {stats?.ab_definition_score != null && (
-            <span className="badge-warning text-xs px-2 py-1 rounded-md font-display">
-              복근 {stats.ab_definition_score}/10
-            </span>
-          )}
         </div>
       </div>
       <div className="flex justify-between text-xs text-text-secondary">

@@ -142,23 +142,14 @@ export default function ScanDetailPage() {
               <ScoreColumn label="일반인 대비 상위" value={stats.percentile} suffix="%" gradient />
               <ScoreColumn label="목표 싱크율" value={stats.sync_rate} suffix="%" color="#FF6B35" />
             </div>
-            <p className="relative text-center text-[11px] text-text-dim mt-2">
-              AI가 사진을 보고 추정한 엔터테인먼트용 수치이며 실제 측정값이 아닙니다
-            </p>
           </div>
 
           {/* 수치 뱃지 행 */}
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 gap-3 text-center">
             <div className="card py-3">
               <p className="text-xs text-text-secondary mb-1">체지방률</p>
               <p className="font-display font-extrabold text-xl" style={{ color: "#39FF14" }}>
                 {stats.body_fat_estimate_pct ?? "-"}%
-              </p>
-            </div>
-            <div className="card py-3">
-              <p className="text-xs text-text-secondary mb-1">복근 선명도</p>
-              <p className="font-display font-extrabold text-xl" style={{ color: "#FF6B35" }}>
-                {stats.ab_definition_score ?? "-"}/10
               </p>
             </div>
             <div className="card py-3">

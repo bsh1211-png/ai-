@@ -52,10 +52,9 @@ export async function generateShareCardBlob(stats: HeadlineStats, dateLabel: str
   const badgeY = 1050;
   const badges: [string, string | number, string][] = [
     ["체지방", `${stats.body_fat_estimate_pct ?? "-"}%`, "#39FF14"],
-    ["복근선명도", `${stats.ab_definition_score ?? "-"}/10`, "#FF6B35"],
     ["대칭", stats.symmetry_score !== null ? `${stats.symmetry_score}` : "-", "#00E5FF"],
   ];
-  const spacing = WIDTH / 3;
+  const spacing = WIDTH / 2;
   badges.forEach(([label, value, color], i) => {
     const x = spacing * i + spacing / 2;
     ctx.font = "600 28px Pretendard, sans-serif";
@@ -69,7 +68,6 @@ export async function generateShareCardBlob(stats: HeadlineStats, dateLabel: str
   ctx.font = "500 28px Pretendard, sans-serif";
   ctx.fillStyle = "#555570";
   ctx.fillText(dateLabel, WIDTH / 2, 1250);
-  ctx.fillText("AI 추정 · 엔터테인먼트 목적", WIDTH / 2, 1290);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
 }
