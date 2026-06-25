@@ -100,8 +100,9 @@ export default function GoalsPage() {
         <div className="space-y-3 border rounded-xl p-4">
           <p className="text-sm font-medium">워너비 사진 업로드 (선택)</p>
           <p className="text-xs text-gray-500">
-            본인이 원하는 몸의 사진(인플루언서, 연예인 사진 등)을 올리면 분석 시 함께 비교합니다. 본인이
-            권리를 가졌거나 비공개 개인용 비교 목적으로만 사용함에 동의가 필요합니다.
+            본인이 원하는 몸의 사진(인플루언서, 연예인 사진 등)을 올리면 분석 시 함께 비교합니다. AI가 사진을
+            보고 위의 목표 텍스트를 사진에 맞게 자동으로 조정합니다. 본인이 권리를 가졌거나 비공개 개인용
+            비교 목적으로만 사용함에 동의가 필요합니다.
           </p>
           <input
             type="file"

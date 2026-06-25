@@ -11,7 +11,7 @@ export function Nav() {
   return (
     <nav className="border-b border-black/10 px-6 py-3 flex items-center gap-6 text-sm">
       <Link href="/" className="font-semibold">
-        피지크 분석
+        Swole Meter
       </Link>
       {user && (
         <>

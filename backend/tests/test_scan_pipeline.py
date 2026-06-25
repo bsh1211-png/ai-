@@ -4,6 +4,7 @@ from app.models.exercise import Exercise, ExerciseSource
 from app.services import vision_service
 
 FIXTURE_IMAGE = Path(__file__).parent / "fixtures" / "sample_body.jpg"
+NO_PERSON_IMAGE = Path(__file__).parent / "fixtures" / "no_person.jpg"
 
 
 def _signup_and_consent(client) -> str:
@@ -139,3 +140,29 @@ def test_upload_blocked_without_consent(client):
             files={"file": ("sample.jpg", f, "image/jpeg")},
         )
     assert upload_resp.status_code == 403
+
+
+def test_scan_requests_retake_when_no_pose_detected(client, monkeypatch):
+    token = _signup_and_consent(client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("포즈 인식 실패 시 Gemini를 호출하면 안 됨")
+
+    monkeypatch.setattr(vision_service, "analyze_body_image", fail_if_called)
+
+    create_resp = client.post("/scans", json={"category": "upper"}, headers=headers)
+    session_id = create_resp.json()["id"]
+
+    with open(NO_PERSON_IMAGE, "rb") as f:
+        client.post(
+            f"/scans/{session_id}/images?angle=front",
+            headers=headers,
+            files={"file": ("no_person.jpg", f, "image/jpeg")},
+        )
+
+    client.post(f"/scans/{session_id}/analyze", headers=headers)
+
+    session_resp = client.get(f"/scans/{session_id}", headers=headers)
+    assert session_resp.json()["status"] == "failed"
+    assert "다시 촬영" in session_resp.json()["error_message"]

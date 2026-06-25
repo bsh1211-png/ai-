@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "피지크 분석",
+  title: "Swole Meter",
   description: "내 몸을 분석하고 목표 몸에 맞는 운동을 추천받는 개인 PT 에이전트",
 };
 

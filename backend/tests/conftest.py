@@ -27,6 +27,7 @@ def client(tmp_path, monkeypatch):
     # 양쪽 다 테스트 DB를 보도록 패치해야 한다.
     monkeypatch.setattr("app.db.SessionLocal", TestingSessionLocal)
     monkeypatch.setattr("app.services.analysis_orchestrator.SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.api.oauth.SessionLocal", TestingSessionLocal)
 
     storage_root = tmp_path / "storage"
     storage_root.mkdir(parents=True, exist_ok=True)

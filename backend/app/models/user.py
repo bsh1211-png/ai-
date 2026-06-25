@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -16,11 +16,21 @@ class GuardianConsentStatus(str, enum.Enum):
     rejected = "rejected"
 
 
+class OAuthProvider(str, enum.Enum):
+    google = "google"
+    kakao = "kakao"
+    naver = "naver"
+
+
 class User(UUIDPKMixin, CreatedAtMixin, Base):
     __tablename__ = "users"
+    __table_args__ = (UniqueConstraint("oauth_provider", "oauth_id", name="uq_users_oauth"),)
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
+    # 소셜 로그인 전용 계정은 비밀번호가 없다.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    oauth_provider: Mapped[OAuthProvider | None] = mapped_column(Enum(OAuthProvider), nullable=True)
+    oauth_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     birth_date: Mapped[date] = mapped_column(Date)
     is_minor: Mapped[bool] = mapped_column(Boolean, default=False)
     guardian_consent_status: Mapped[GuardianConsentStatus] = mapped_column(

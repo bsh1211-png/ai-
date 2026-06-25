@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "physique-analysis-api"
+    app_name: str = "swole-meter-api"
     environment: str = "development"
     database_url: str = "sqlite:///./dev.db"
 
@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
 
     youtube_api_key: str = ""
+
+    backend_base_url: str = "http://localhost:8000"
+    frontend_base_url: str = "http://localhost:3000"
+
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    kakao_client_id: str = ""
+    kakao_client_secret: str = ""
+    naver_client_id: str = ""
+    naver_client_secret: str = ""
 
     class Config:
         env_file = ".env"

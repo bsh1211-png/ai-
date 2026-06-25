@@ -64,6 +64,16 @@ def run_analysis(session_id) -> None:
             db.commit()
             return
 
+        if not pose_summaries:
+            # 모든 사진에서 신체를 인식하지 못함 -> 부정확한 분석을 만들지 말고 재촬영을 요청한다.
+            session.status = ScanStatus.failed
+            session.error_message = (
+                "사진에서 신체를 정확히 인식하지 못했어요. 밝은 곳에서 전신/해당 부위가 잘 보이도록 "
+                "다시 촬영해주세요."
+            )
+            db.commit()
+            return
+
         goal = (
             db.query(BodyGoal)
             .filter(BodyGoal.user_id == session.user_id, BodyGoal.is_active.is_(True))

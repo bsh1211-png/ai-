@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type SignupResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,6 +63,13 @@ export default function LoginPage() {
       >
         {submitting ? "처리 중..." : "로그인"}
       </button>
+
+      <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex-1 border-t" />
+        또는
+        <div className="flex-1 border-t" />
+      </div>
+      <SocialLoginButtons />
     </form>
   );
 }

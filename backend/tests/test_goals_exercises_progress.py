@@ -1,4 +1,9 @@
+from pathlib import Path
+
 from app.models.exercise import Exercise, ExerciseSource
+from app.services import vision_service
+
+FIXTURE_IMAGE = Path(__file__).parent / "fixtures" / "sample_body.jpg"
 
 
 def _signup(client, email="goaluser@example.com"):
@@ -71,3 +76,39 @@ def test_list_exercises_filter_by_muscle(client):
 
     resp_all = client.get("/exercises")
     assert len(resp_all.json()) == 2
+
+
+def test_goal_reference_image_adjusts_goal_text(client, monkeypatch):
+    headers = _signup(client, "goalimage@example.com")
+    goal = client.post("/goals", json={"goal_text": "원래 목표"}, headers=headers).json()
+
+    monkeypatch.setattr(
+        vision_service, "describe_goal_image", lambda db, image_bytes: "어깨 넓고 허리 가는 역삼각형 체형"
+    )
+
+    with open(FIXTURE_IMAGE, "rb") as f:
+        resp = client.post(
+            f"/goals/{goal['id']}/reference-image",
+            headers=headers,
+            data={"consent": "true"},
+            files={"file": ("wannabe.jpg", f, "image/jpeg")},
+        )
+    assert resp.status_code == 200
+    updated = resp.json()
+    assert updated["goal_text"] == "어깨 넓고 허리 가는 역삼각형 체형"
+    assert updated["goal_type"] == "combined"
+    assert updated["reference_image_consent"] is True
+
+
+def test_goal_reference_image_requires_consent(client):
+    headers = _signup(client, "goalnoconsent@example.com")
+    goal = client.post("/goals", json={"goal_text": "목표"}, headers=headers).json()
+
+    with open(FIXTURE_IMAGE, "rb") as f:
+        resp = client.post(
+            f"/goals/{goal['id']}/reference-image",
+            headers=headers,
+            data={"consent": "false"},
+            files={"file": ("wannabe.jpg", f, "image/jpeg")},
+        )
+    assert resp.status_code == 400

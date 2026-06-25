@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { api, exerciseImageUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -103,7 +104,15 @@ export default function ScanDetailPage() {
       )}
 
       {session.status === "failed" && (
-        <p className="text-sm text-red-600">{session.error_message ?? "분석에 실패했습니다"}</p>
+        <div className="space-y-3">
+          <p className="text-sm text-red-600">{session.error_message ?? "분석에 실패했습니다"}</p>
+          <Link
+            href="/scan/new"
+            className="inline-block min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm font-medium"
+          >
+            다시 촬영하기
+          </Link>
+        </div>
       )}
 
       {report && stats && (
@@ -123,9 +132,6 @@ export default function ScanDetailPage() {
                 sad={stats.sync_rate !== null && stats.sync_rate < 50}
               />
             </div>
-            <p className="text-center text-[11px] text-white/50 pb-2">
-              * AI가 사진을 보고 추정한 엔터테인먼트용 수치이며 실제 측정값이 아닙니다
-            </p>
           </div>
 
           <div className="rounded-xl border p-4 bg-white">
@@ -133,7 +139,6 @@ export default function ScanDetailPage() {
             <p className="text-sm text-gray-800 whitespace-pre-wrap">{report.summary}</p>
             <div className="flex gap-4 mt-3 text-xs text-gray-600">
               <span>추정 체지방률 {stats.body_fat_estimate_pct ?? "-"}%</span>
-              <span>복근 선명도 {stats.ab_definition_score ?? "-"}/10</span>
             </div>
           </div>
 

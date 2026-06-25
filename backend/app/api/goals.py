@@ -9,6 +9,7 @@ from app.db import get_db
 from app.models.scan import BodyGoal, GoalType
 from app.models.user import User
 from app.schemas.goal import GoalCreateRequest, GoalResponse
+from app.services import vision_service
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/goals", tags=["goals"])
@@ -59,6 +60,16 @@ async def upload_reference_image(
     goal.reference_image_path = storage_path
     goal.reference_image_consent = True
     goal.goal_type = GoalType.combined if goal.goal_text else GoalType.reference_image
+
+    # 사진에 맞춰 목표 텍스트를 자동으로 조정. 실패해도 사진 업로드 자체는 성공시킨다.
+    try:
+        described = vision_service.describe_goal_image(db, content)
+        if described:
+            goal.goal_text = described
+            goal.goal_type = GoalType.combined
+    except (vision_service.DailyQuotaExceeded, vision_service.StillAnalyzing):
+        pass
+
     db.commit()
     db.refresh(goal)
     return goal

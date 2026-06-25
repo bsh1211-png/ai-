@@ -29,6 +29,15 @@ class SignupResponse(TokenResponse):
     guardian_consent_dev_token: str | None = None
 
 
+class OAuthCompleteSignupRequest(BaseModel):
+    pending_token: str
+    birth_date: date
+    accept_terms: bool
+    accept_privacy: bool
+    accept_marketing: bool = False
+    guardian_email: EmailStr | None = None
+
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr

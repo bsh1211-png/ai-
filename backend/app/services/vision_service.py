@@ -56,6 +56,12 @@ HISTORY_SUMMARY_SYSTEM_INSTRUCTION = """너는 사용자의 누적된 신체 분
 의학적 진단은 내리지 말 것. 다음 JSON 스키마로만 응답하라: {"summary": "<총평>"}
 """
 
+GOAL_IMAGE_DESCRIPTION_SYSTEM_INSTRUCTION = """너는 피트니스 트레이너다. 사용자가 업로드한 "워너비(목표) 몸" 사진을 보고,
+그 사람의 체형 특징(어깨/허리/가슴/복근/하체 등 눈에 보이는 비율과 발달 정도)을 1~2문장의 한국어 목표 설명으로 요약하라.
+실제 인물을 특정하지 말고 체형 특징만 묘사한다 (예: "어깨가 넓고 허리가 가는 역삼각형 체형, 복근이 선명함").
+다음 JSON 스키마로만 응답하라: {"goal_text": "<체형 설명>"}
+"""
+
 
 class DailyQuotaExceeded(Exception):
     pass
@@ -150,3 +156,9 @@ def analyze_body_image(
 def generate_history_summary(db: Session, history_context: str) -> str:
     result = generate_with_fallback(db, [history_context], HISTORY_SUMMARY_SYSTEM_INSTRUCTION)
     return result.get("summary", "")
+
+
+def describe_goal_image(db: Session, image_bytes: bytes) -> str:
+    contents = [genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
+    result = generate_with_fallback(db, contents, GOAL_IMAGE_DESCRIPTION_SYSTEM_INSTRUCTION)
+    return result.get("goal_text", "")

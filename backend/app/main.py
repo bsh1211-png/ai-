@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, consents, exercises, goals, history, progress, scans
+from app.api import auth, consents, exercises, goals, history, oauth, progress, scans
 from app.config import settings
 from app.services.storage_service import storage_service
 
@@ -24,6 +24,7 @@ exercise_images_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/media/exercise_images", StaticFiles(directory=str(exercise_images_dir)), name="exercise_images")
 
 app.include_router(auth.router)
+app.include_router(oauth.router)
 app.include_router(consents.router)
 app.include_router(scans.router)
 app.include_router(goals.router)
