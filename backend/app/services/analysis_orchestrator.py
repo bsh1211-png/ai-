@@ -71,13 +71,16 @@ def run_analysis(session_id) -> None:
             .first()
         )
         goal_text = goal.goal_text if goal else None
+        goal_image_bytes = None
+        if goal and goal.reference_image_path:
+            goal_image_bytes = storage_service.read_bytes(goal.reference_image_path)
         image_bytes = storage_service.read_bytes(primary_image.storage_path)
 
         vision_result = None
         for attempt in range(MAX_RETRIES):
             try:
                 vision_result = vision_service.analyze_body_image(
-                    db, image_bytes, {"images": pose_summaries}, goal_text
+                    db, image_bytes, {"images": pose_summaries}, goal_text, goal_image_bytes
                 )
                 break
             except vision_service.DailyQuotaExceeded:

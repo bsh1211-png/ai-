@@ -98,12 +98,36 @@ export interface WeakPoint {
   comment: string;
 }
 
+export interface HeadlineStats {
+  percentile: number | null;
+  sync_rate: number | null;
+  body_fat_estimate_pct: number | null;
+  ab_definition_score: number | null;
+  is_estimate: boolean;
+}
+
+export interface RoutineItem {
+  exercise_id: string;
+  exercise_name: string;
+  target_part: string;
+  sets: number;
+  reps: number;
+  rest_seconds: number;
+}
+
+export interface Routine {
+  name: string;
+  items: RoutineItem[];
+}
+
 export interface AnalysisReport {
   id: string;
   summary: string;
   weak_points: WeakPoint[];
   recommended_exercise_ids: string[];
   goal_comparison: { goal_type: string; goal_text: string | null } | null;
+  headline_stats: HeadlineStats | null;
+  recommended_routine: Routine | null;
   created_at: string;
 }
 
@@ -117,15 +141,23 @@ export interface Exercise {
   equipment: string | null;
   level: string | null;
   image_paths: string[];
-  youtube_video_id: string | null;
+  youtube_video_ids: string[];
 }
 
 export interface Goal {
   id: string;
   goal_type: string;
   goal_text: string | null;
+  reference_image_path: string | null;
+  reference_image_consent: boolean;
   is_active: boolean;
   created_at: string;
+}
+
+export interface HistorySummary {
+  summary: string;
+  generated_at: string;
+  has_enough_data: boolean;
 }
 
 export interface ProgressLog {

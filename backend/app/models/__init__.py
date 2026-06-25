@@ -1,4 +1,5 @@
 from app.models.exercise import Exercise, Routine, UserRoutineAssignment
+from app.models.history_summary import HistorySummary
 from app.models.progress import ProgressLog
 from app.models.quota import ApiQuotaEvent
 from app.models.scan import (
@@ -26,4 +27,5 @@ __all__ = [
     "UserRoutineAssignment",
     "ProgressLog",
     "ApiQuotaEvent",
+    "HistorySummary",
 ]

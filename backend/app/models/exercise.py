@@ -27,7 +27,7 @@ class Exercise(UUIDPKMixin, Base):
     equipment: Mapped[str | None] = mapped_column(String(100), nullable=True)
     level: Mapped[str | None] = mapped_column(String(50), nullable=True)
     image_paths: Mapped[list] = mapped_column(JSON, default=list)
-    youtube_video_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    youtube_video_ids: Mapped[list] = mapped_column(JSON, default=list)
     youtube_channel_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     source: Mapped[ExerciseSource] = mapped_column(Enum(ExerciseSource), default=ExerciseSource.free_exercise_db)
 

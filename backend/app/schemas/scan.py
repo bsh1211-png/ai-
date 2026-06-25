@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 class ScanSessionCreateRequest(BaseModel):
     category: str
-    goal_text: str | None = None
 
 
 class ScanImageResponse(BaseModel):
@@ -36,6 +35,8 @@ class AnalysisReportResponse(BaseModel):
     weak_points: list
     recommended_exercise_ids: list
     goal_comparison: dict | None
+    headline_stats: dict | None
+    recommended_routine: dict | None
     created_at: datetime
 
     class Config:

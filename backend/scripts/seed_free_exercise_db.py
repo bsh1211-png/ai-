@@ -16,6 +16,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from app.db import SessionLocal  # noqa: E402
 from app.models.exercise import Exercise, ExerciseSource  # noqa: E402
 from app.services.storage_service import storage_service  # noqa: E402
+from app.services.youtube_service import search_exercise_videos  # noqa: E402
 
 EXERCISES_JSON_URL = (
     "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
@@ -68,6 +69,7 @@ def seed(limit: int | None = None) -> int:
                 equipment=raw.get("equipment"),
                 level=raw.get("level"),
                 image_paths=image_paths,
+                youtube_video_ids=search_exercise_videos(raw.get("name", "")),
                 source=ExerciseSource.free_exercise_db,
             )
             db.add(exercise)

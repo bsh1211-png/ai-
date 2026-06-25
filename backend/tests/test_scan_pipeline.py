@@ -44,7 +44,7 @@ def test_full_scan_pipeline_success(client, monkeypatch):
     exercise_id = str(exercise.id)
     db.close()
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None):
         return {
             "body_part_assessment": {"lats": "성장 여지가 있습니다"},
             "weak_points": [{"part": "lats", "severity": "medium", "comment": "등 근육 발달에 집중해보세요"}],
@@ -53,7 +53,7 @@ def test_full_scan_pipeline_success(client, monkeypatch):
 
     monkeypatch.setattr(vision_service, "analyze_body_image", fake_analyze)
 
-    create_resp = client.post("/scans", json={"category": "upper_back"}, headers=headers)
+    create_resp = client.post("/scans", json={"category": "upper"}, headers=headers)
     assert create_resp.status_code == 201
     session_id = create_resp.json()["id"]
 
@@ -90,12 +90,12 @@ def test_scan_pipeline_daily_quota_exceeded(client, monkeypatch):
     token = _signup_and_consent(client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None):
         raise vision_service.DailyQuotaExceeded()
 
     monkeypatch.setattr(vision_service, "analyze_body_image", fake_analyze)
 
-    create_resp = client.post("/scans", json={"category": "upper_back"}, headers=headers)
+    create_resp = client.post("/scans", json={"category": "upper"}, headers=headers)
     session_id = create_resp.json()["id"]
 
     with open(FIXTURE_IMAGE, "rb") as f:
@@ -129,7 +129,7 @@ def test_upload_blocked_without_consent(client):
     token = resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    create_resp = client.post("/scans", json={"category": "upper_back"}, headers=headers)
+    create_resp = client.post("/scans", json={"category": "upper"}, headers=headers)
     session_id = create_resp.json()["id"]
 
     with open(FIXTURE_IMAGE, "rb") as f:

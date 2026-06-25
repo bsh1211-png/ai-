@@ -12,15 +12,31 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* 다크모드에서 --foreground가 밝아지면 고정 라이트 배경(bg-white 등) 위 텍스트가 같은 색이 되어
+   안 보이는 문제가 있었음. 이 앱은 아직 다크모드 전용 스타일을 따로 설계하지 않았으므로
+   라이트 테마로 고정한다. */
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes scan-laser {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.scan-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+  box-shadow: 0 0 16px 3px #22d3ee;
+  animation: scan-laser 1.6s ease-in-out infinite alternate;
 }

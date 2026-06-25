@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ApiError, type ProgressLog, type ScanSession } from "@/lib/api";
+import { api, ApiError, type HistorySummary, type ProgressLog, type ScanSession } from "@/lib/api";
 
 export default function HistoryPage() {
+  const [dashboard, setDashboard] = useState<HistorySummary | null>(null);
   const [sessions, setSessions] = useState<ScanSession[]>([]);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
   const [weight, setWeight] = useState("");
@@ -14,6 +15,7 @@ export default function HistoryPage() {
   const loadAll = () => {
     api.get<ScanSession[]>("/scans").then(setSessions);
     api.get<ProgressLog[]>("/progress").then(setLogs);
+    api.get<HistorySummary>("/history/dashboard-summary").then(setDashboard).catch(() => setDashboard(null));
   };
 
   useEffect(() => {
@@ -38,17 +40,26 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-10">
+      <div className="rounded-2xl bg-gray-900 text-white p-5 space-y-2">
+        <p className="text-xs text-white/60">종합 대시보드</p>
+        <p className="text-base font-medium whitespace-pre-wrap">
+          {dashboard ? dashboard.summary : "불러오는 중..."}
+        </p>
+      </div>
+
       <div>
-        <h1 className="text-xl font-semibold mb-4">분석 기록</h1>
+        <h1 className="text-xl font-semibold mb-4 text-gray-900">분석 기록</h1>
         {sessions.length === 0 && <p className="text-sm text-gray-500">아직 분석 기록이 없습니다.</p>}
         <ul className="space-y-2">
           {sessions.map((s) => (
-            <li key={s.id} className="border rounded p-3 flex justify-between items-center text-sm">
+            <li key={s.id} className="border rounded-xl p-3 flex justify-between items-center text-sm">
               <div>
-                <p>{new Date(s.scan_date).toLocaleDateString("ko-KR")}</p>
-                <p className="text-xs text-gray-500">{s.category} · {s.status}</p>
+                <p className="text-gray-900">{new Date(s.scan_date).toLocaleDateString("ko-KR")}</p>
+                <p className="text-xs text-gray-500">
+                  {s.category} · {s.status}
+                </p>
               </div>
-              <Link href={`/scan/${s.id}`} className="text-sm underline">
+              <Link href={`/scan/${s.id}`} className="min-h-11 flex items-center text-sm underline text-gray-900">
                 보기
               </Link>
             </li>
@@ -57,24 +68,24 @@ export default function HistoryPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-4">몸무게/메모 기록</h2>
-        <form onSubmit={addLog} className="flex gap-2 mb-4">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">몸무게/메모 기록</h2>
+        <form onSubmit={addLog} className="flex flex-wrap gap-2 mb-4">
           <input
             type="number"
             step="0.1"
             placeholder="몸무게(kg)"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
-            className="border rounded px-3 py-2 w-32"
+            className="border rounded-lg px-3 py-2 w-32 text-gray-900"
           />
           <input
             type="text"
             placeholder="메모"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="border rounded px-3 py-2 flex-1"
+            className="border rounded-lg px-3 py-2 flex-1 min-w-32 text-gray-900"
           />
-          <button type="submit" className="rounded bg-black text-white px-4 py-2 text-sm">
+          <button type="submit" className="min-h-11 rounded-xl bg-black text-white px-4 py-2 text-sm">
             기록 추가
           </button>
         </form>

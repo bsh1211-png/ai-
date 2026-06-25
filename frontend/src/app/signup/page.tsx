@@ -59,7 +59,7 @@ export default function SignupPage() {
         </p>
         <a
           href={`/consents/guardian-confirm?token=${devGuardianToken}`}
-          className="inline-block rounded bg-black text-white px-4 py-2 text-sm"
+          className="inline-block min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm"
         >
           (개발용) 법정대리인 동의 페이지로 이동
         </a>
@@ -163,7 +163,7 @@ export default function SignupPage() {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
+        className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
       >
         {submitting ? "처리 중..." : "가입하기"}
       </button>

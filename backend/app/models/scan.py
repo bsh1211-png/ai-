@@ -10,11 +10,11 @@ from app.models.mixins import CreatedAtMixin, UUIDPKMixin
 
 
 class ScanCategory(str, enum.Enum):
-    full_360 = "full_360"
-    upper_front = "upper_front"
-    upper_back = "upper_back"
+    """진입 단계에서 3가지로만 단순화: 전신/상체/하체. 세부 각도는 ImageAngle로 구분."""
+
+    full_body = "full_body"
+    upper = "upper"
     lower = "lower"
-    custom = "custom"
 
 
 class ScanStatus(str, enum.Enum):
@@ -91,11 +91,15 @@ class AnalysisReport(UUIDPKMixin, CreatedAtMixin, Base):
     weak_points: Mapped[list] = mapped_column(JSON)
     recommended_exercise_ids: Mapped[list] = mapped_column(JSON)
     goal_comparison: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # AI가 "엔터테인먼트/동기부여 목적"으로 유추한 수치(상위%, 싱크로율 등). 실측 아님 -> is_estimate로 항상 표시.
+    headline_stats: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    recommended_routine: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class GoalType(str, enum.Enum):
     text = "text"
     reference_image = "reference_image"
+    combined = "combined"
 
 
 class BodyGoal(UUIDPKMixin, CreatedAtMixin, Base):
@@ -105,5 +109,6 @@ class BodyGoal(UUIDPKMixin, CreatedAtMixin, Base):
     goal_type: Mapped[GoalType] = mapped_column(Enum(GoalType))
     goal_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_image_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reference_image_consent: Mapped[bool] = mapped_column(Boolean, default=False)
     target_body_parts: Mapped[list | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

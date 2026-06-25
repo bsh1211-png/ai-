@@ -51,14 +51,14 @@ export default function BodyImageConsentPage() {
         <button
           onClick={() => handleConsent(true)}
           disabled={submitting}
-          className="rounded bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
+          className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
         >
           동의하고 계속하기
         </button>
         <button
           onClick={() => handleConsent(false)}
           disabled={submitting}
-          className="rounded border px-4 py-2 text-sm"
+          className="min-h-11 rounded-xl border px-4 py-3 text-sm"
         >
           동의하지 않음
         </button>

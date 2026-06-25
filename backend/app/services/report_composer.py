@@ -1,7 +1,29 @@
 from sqlalchemy.orm import Session
 
 from app.models.scan import AnalysisReport, BodyGoal
-from app.services.exercise_matcher import match_exercises_for_weak_points
+from app.services.exercise_matcher import match_exercises_grouped
+
+SEVERITY_SETS = {"high": 4, "medium": 3, "low": 3}
+DEFAULT_REPS = 12
+DEFAULT_REST_SECONDS = 60
+
+
+def _build_routine(grouped: list[tuple[dict, list]]) -> dict:
+    items = []
+    for weak_point, exercises in grouped:
+        sets = SEVERITY_SETS.get(weak_point.get("severity", "medium"), 3)
+        for exercise in exercises:
+            items.append(
+                {
+                    "exercise_id": str(exercise.id),
+                    "exercise_name": exercise.name_ko or exercise.name_en,
+                    "target_part": weak_point.get("part"),
+                    "sets": sets,
+                    "reps": DEFAULT_REPS,
+                    "rest_seconds": DEFAULT_REST_SECONDS,
+                }
+            )
+    return {"name": "보완 부위 집중 루틴", "items": items}
 
 
 def compose_report(
@@ -12,7 +34,9 @@ def compose_report(
     pose_summary: dict,
 ) -> AnalysisReport:
     weak_points = vision_result.get("weak_points", [])
-    recommended_exercise_ids = match_exercises_for_weak_points(db, weak_points)
+    grouped = match_exercises_grouped(db, weak_points)
+    recommended_exercise_ids = [str(ex.id) for _, exercises in grouped for ex in exercises]
+    recommended_routine = _build_routine(grouped)
 
     goal = (
         db.query(BodyGoal)
@@ -30,6 +54,8 @@ def compose_report(
         weak_points=weak_points,
         recommended_exercise_ids=recommended_exercise_ids,
         goal_comparison=goal_comparison,
+        headline_stats=vision_result.get("headline_stats"),
+        recommended_routine=recommended_routine,
     )
     db.add(report)
     db.commit()

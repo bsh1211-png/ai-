@@ -13,7 +13,7 @@ class ExerciseResponse(BaseModel):
     equipment: str | None
     level: str | None
     image_paths: list
-    youtube_video_id: str | None
+    youtube_video_ids: list
 
     class Config:
         from_attributes = True

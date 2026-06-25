@@ -23,18 +23,37 @@ ALLOWED_MUSCLE_TAGS = [
     "lower back", "abdominals", "glutes", "quadriceps", "hamstrings", "calves",
 ]
 
-_SYSTEM_INSTRUCTION = f"""너는 웨이트 트레이닝 신체 분석 보조 AI다. 다음 규칙을 반드시 지켜라.
-- 의학적 진단을 내리지 말고, 체지방률·질병 관련 단정적 표현을 쓰지 않는다.
-- 결핍이 아닌 성장 가능성의 관점으로 서술한다 (예: "부족하다" 대신 "성장 여지가 있다").
-- 사용자가 제공한 정량 데이터(어깨/골반 비율, 좌우 대칭성)를 참고하되, 그 자체를 그대로 출력하지 말고 자연스러운 코멘트로 풀어 설명한다.
-- 반드시 다음 문장을 overall_comment 마지막에 포함한다: "{GUARDIAN_CONSENT_REMINDER}"
+BODY_ANALYSIS_SYSTEM_INSTRUCTION = f"""너는 아주 날카롭고 솔직한 전문 피트니스 트레이너이자 체형 분석가이다.
+완벽한 정밀 측정은 불가능하므로, 사진의 명암, 근육의 경계선(복근/어깨 등), 실루엣, 체형 비율을 기반으로
+'엔터테인먼트 및 동기부여' 목적의 그럴싸하고 디테일한 수치를 정교하게 유추하여 스토리텔링과 함께 전달하라.
+다음 규칙을 반드시 지켜라.
+- 좋은 부분은 화끈하게 칭찬하고, 보완이 필요한 부위는 직설적이고 솔직하게 짚어준다 (눈치 보지 말고 트레이너답게 솔직하게).
+- 의학적 진단(질병명 등)은 내리지 않는다. 체지방률/복근선명도/상위%/싱크로율은 추정치이며 실측이 아님을 내부적으로 인지하되,
+  사용자에게 보여줄 코멘트에는 자신감 있게 단정적으로 서술한다 (이건 동기부여용 엔터테인먼트 콘텐츠다).
+- overall_comment 마지막 문장에는 반드시 다음을 포함한다: "{GUARDIAN_CONSENT_REMINDER}"
 - weak_points의 part 값은 반드시 다음 목록 중에서만 고른다: {", ".join(ALLOWED_MUSCLE_TAGS)}
+- headline_stats.percentile은 1~99 사이 정수로 "동성/동연령대 일반인 대비 상위 X%"를 의미한다 (작을수록 상위).
+- 워너비(목표) 이미지가 함께 주어진 경우에만 headline_stats.sync_rate(0~100 정수, 목표 몸과의 싱크로율)를 채운다. 없으면 null.
+- headline_stats.is_estimate는 항상 true로 고정한다.
 - 응답은 다음 JSON 스키마를 따른다:
 {{
   "body_part_assessment": {{"<부위>": "<코멘트>"}},
-  "weak_points": [{{"part": "<부위>", "severity": "low|medium|high", "comment": "<코멘트>"}}],
-  "overall_comment": "<종합 코멘트>"
+  "weak_points": [{{"part": "<부위>", "severity": "low|medium|high", "comment": "<직설적이고 솔직한 코멘트>"}}],
+  "overall_comment": "<종합 코멘트, 좋은 점은 화끈한 칭찬으로 시작>",
+  "headline_stats": {{
+    "percentile": <int>,
+    "sync_rate": <int|null>,
+    "body_fat_estimate_pct": <number>,
+    "ab_definition_score": <int 1-10>,
+    "is_estimate": true
+  }}
 }}
+"""
+
+HISTORY_SUMMARY_SYSTEM_INSTRUCTION = """너는 사용자의 누적된 신체 분석 기록을 보고 변화 추이를 짚어주는 피트니스 코치다.
+과거 기록들의 요약과 진행 기록(체중 등)을 보고 시간에 따른 변화를 평가하라.
+좋아졌으면 화끈하게 격려하고, 정체/악화됐으면 직설적으로 경고하라. 단정적이고 자신감 있는 톤으로 2~4문장으로 답하라.
+의학적 진단은 내리지 말 것. 다음 JSON 스키마로만 응답하라: {"summary": "<총평>"}
 """
 
 
@@ -66,37 +85,22 @@ def _log_quota_event(db: Session, model: str, event_type: QuotaEventType) -> Non
     db.commit()
 
 
-def _build_prompt(pose_summary: dict, goal_text: str | None) -> str:
-    lines = [
-        "다음은 사용자의 신체 사진과 자동 측정된 정량 데이터다.",
-        f"정량 데이터: {json.dumps(pose_summary, ensure_ascii=False)}",
-    ]
-    if goal_text:
-        lines.append(f"사용자가 원하는 목표 몸 설명: {goal_text}")
-    lines.append("위 정보를 참고해 신체를 분석하고 지정된 JSON 스키마로만 응답하라.")
-    return "\n".join(lines)
-
-
-def _call_model(model_name: str, image_bytes: bytes, prompt: str) -> dict:
+def _call_model(model_name: str, contents: list, system_instruction: str) -> dict:
     response = _client.models.generate_content(
         model=model_name,
-        contents=[
-            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-            prompt,
-        ],
+        contents=contents,
         config=genai.types.GenerateContentConfig(
-            system_instruction=_SYSTEM_INSTRUCTION,
+            system_instruction=system_instruction,
             response_mime_type="application/json",
         ),
     )
     return json.loads(response.text)
 
 
-def analyze_body_image(db: Session, image_bytes: bytes, pose_summary: dict, goal_text: str | None) -> dict:
-    prompt = _build_prompt(pose_summary, goal_text)
-
+def generate_with_fallback(db: Session, contents: list, system_instruction: str) -> dict:
+    """Pro -> Flash 폴백, 한도초과 이벤트 로깅을 공통으로 처리하는 Gemini 호출 헬퍼."""
     try:
-        return _call_model(settings.gemini_pro_model, image_bytes, prompt)
+        return _call_model(settings.gemini_pro_model, contents, system_instruction)
     except errors.APIError as error:
         if error.code == 429 and _is_daily_quota_error(error):
             _log_quota_event(db, settings.gemini_pro_model, QuotaEventType.daily_quota_exceeded)
@@ -105,10 +109,44 @@ def analyze_body_image(db: Session, image_bytes: bytes, pose_summary: dict, goal
         logger.info("Gemini Pro 응답 실패(%s), Flash로 폴백", error.code)
 
     try:
-        return _call_model(settings.gemini_flash_model, image_bytes, prompt)
+        return _call_model(settings.gemini_flash_model, contents, system_instruction)
     except errors.APIError as error:
         if error.code == 429 and _is_daily_quota_error(error):
             _log_quota_event(db, settings.gemini_flash_model, QuotaEventType.daily_quota_exceeded)
             raise DailyQuotaExceeded() from error
         _log_quota_event(db, settings.gemini_flash_model, QuotaEventType.rate_limit)
         raise StillAnalyzing() from error
+
+
+def _build_prompt(pose_summary: dict, goal_text: str | None, has_goal_image: bool) -> str:
+    lines = [
+        "다음은 사용자의 신체 사진과 자동 측정된 정량 데이터다.",
+        f"정량 데이터: {json.dumps(pose_summary, ensure_ascii=False)}",
+    ]
+    if goal_text:
+        lines.append(f"사용자가 원하는 목표 몸 설명: {goal_text}")
+    if has_goal_image:
+        lines.append("두 번째로 첨부된 이미지는 사용자가 원하는 목표(워너비) 몸 사진이다. 이 사진과 비교해 싱크로율을 추정하라.")
+    lines.append("위 정보를 참고해 신체를 분석하고 지정된 JSON 스키마로만 응답하라.")
+    return "\n".join(lines)
+
+
+def analyze_body_image(
+    db: Session,
+    image_bytes: bytes,
+    pose_summary: dict,
+    goal_text: str | None,
+    goal_image_bytes: bytes | None = None,
+) -> dict:
+    prompt = _build_prompt(pose_summary, goal_text, goal_image_bytes is not None)
+    contents: list = [genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
+    if goal_image_bytes:
+        contents.append(genai.types.Part.from_bytes(data=goal_image_bytes, mime_type="image/jpeg"))
+    contents.append(prompt)
+
+    return generate_with_fallback(db, contents, BODY_ANALYSIS_SYSTEM_INSTRUCTION)
+
+
+def generate_history_summary(db: Session, history_context: str) -> str:
+    result = generate_with_fallback(db, [history_context], HISTORY_SUMMARY_SYSTEM_INSTRUCTION)
+    return result.get("summary", "")

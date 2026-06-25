@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, consents, exercises, goals, progress, scans
+from app.api import auth, consents, exercises, goals, history, progress, scans
 from app.config import settings
 from app.services.storage_service import storage_service
 
@@ -29,6 +29,7 @@ app.include_router(scans.router)
 app.include_router(goals.router)
 app.include_router(exercises.router)
 app.include_router(progress.router)
+app.include_router(history.router)
 
 
 @app.get("/health")

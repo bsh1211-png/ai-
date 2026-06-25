@@ -58,7 +58,7 @@ export default function LoginPage() {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
+        className="min-h-11 rounded-xl bg-black text-white px-4 py-3 text-sm disabled:opacity-50"
       >
         {submitting ? "처리 중..." : "로그인"}
       </button>
