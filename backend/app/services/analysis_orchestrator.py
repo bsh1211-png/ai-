@@ -90,7 +90,12 @@ def run_analysis(session_id) -> None:
         for attempt in range(MAX_RETRIES):
             try:
                 vision_result = vision_service.analyze_body_image(
-                    db, image_bytes, {"images": pose_summaries}, goal_text, goal_image_bytes
+                    db,
+                    image_bytes,
+                    {"images": pose_summaries},
+                    goal_text,
+                    goal_image_bytes,
+                    category=session.category.value,
                 )
                 break
             except vision_service.DailyQuotaExceeded:

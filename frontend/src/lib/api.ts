@@ -111,9 +111,10 @@ export interface RoutineItem {
   exercise_id: string;
   exercise_name: string;
   target_part: string;
-  sets: number;
-  reps: number;
-  rest_seconds: number;
+  sets: number | null;
+  reps: number | null;
+  rest_seconds: number | null;
+  duration_minutes?: number;
 }
 
 export interface Routine {

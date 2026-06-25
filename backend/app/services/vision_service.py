@@ -18,21 +18,42 @@ _client = genai.Client(api_key=settings.gemini_api_key)
 # 단순 분당 쿨다운은 보통 수십 초 단위로 내려오기 때문에 5분을 경계값으로 둔다.
 DAILY_RETRY_DELAY_THRESHOLD_SECONDS = 300
 
-ALLOWED_MUSCLE_TAGS = [
+# 분석 카테고리별로 실제 사진에 안 보이는 부위까지 weak_points로 잡아내는 문제(예: 하체 사진인데 복근이 나옴)를
+# 막기 위해 카테고리별로 허용 근육 태그를 분리한다. "전거근"은 Free Exercise DB 분류에는 없는 부위라
+# 운동 매칭은 별도 curated 데이터로 보강한다 (scripts/seed_curated_exercises.py).
+UPPER_MUSCLE_TAGS = [
     "chest", "shoulders", "triceps", "biceps", "forearms", "lats", "traps",
-    "lower back", "abdominals", "glutes", "quadriceps", "hamstrings", "calves",
+    "middle back", "lower back", "abdominals", "serratus anterior",
 ]
+LOWER_MUSCLE_TAGS = ["glutes", "quadriceps", "hamstrings", "calves", "abductors", "adductors"]
 
-BODY_ANALYSIS_SYSTEM_INSTRUCTION = f"""너는 아주 날카롭고 솔직한 전문 피트니스 트레이너이자 체형 분석가이다.
+CATEGORY_MUSCLE_TAGS = {
+    "upper": UPPER_MUSCLE_TAGS,
+    "lower": LOWER_MUSCLE_TAGS,
+    "full_body": UPPER_MUSCLE_TAGS + LOWER_MUSCLE_TAGS,
+}
+
+
+def _allowed_muscle_tags(category: str | None) -> list[str]:
+    return CATEGORY_MUSCLE_TAGS.get(category or "full_body", CATEGORY_MUSCLE_TAGS["full_body"])
+
+
+def _build_system_instruction(category: str | None) -> str:
+    allowed_tags = _allowed_muscle_tags(category)
+    return f"""너는 아주 날카롭고 솔직한 전문 피트니스 트레이너이자 체형 분석가이다.
 완벽한 정밀 측정은 불가능하므로, 사진의 명암, 근육의 경계선(복근/어깨 등), 실루엣, 체형 비율을 기반으로
 '엔터테인먼트 및 동기부여' 목적의 그럴싸하고 디테일한 수치를 정교하게 유추하여 스토리텔링과 함께 전달하라.
 다음 규칙을 반드시 지켜라.
 - 좋은 부분은 화끈하게 칭찬하고, 보완이 필요한 부위는 직설적이고 솔직하게 짚어준다 (눈치 보지 말고 트레이너답게 솔직하게).
-- 의학적 진단(질병명 등)은 내리지 않는다. 체지방률/복근선명도/상위%/싱크로율은 추정치이며 실측이 아님을 내부적으로 인지하되,
+- 의학적 진단(질병명 등)은 내리지 않는다. 체지방률/상위%/싱크로율은 추정치이며 실측이 아님을 내부적으로 인지하되,
   사용자에게 보여줄 코멘트에는 자신감 있게 단정적으로 서술한다 (이건 동기부여용 엔터테인먼트 콘텐츠다).
 - overall_comment 마지막 문장에는 반드시 다음을 포함한다: "{GUARDIAN_CONSENT_REMINDER}"
-- weak_points의 part 값은 반드시 다음 목록 중에서만 고른다: {", ".join(ALLOWED_MUSCLE_TAGS)}
-- headline_stats.percentile은 1~99 사이 정수로 "동성/동연령대 일반인 대비 상위 X%"를 의미한다 (작을수록 상위).
+- 사진에 실제로 보이는 부위만 평가한다. weak_points의 part 값은 반드시 다음 목록 중에서만 고른다
+  (이 사진의 분석 범위 밖의 부위는 절대 언급하지 말 것): {", ".join(allowed_tags)}
+- headline_stats.percentile은 1~99 사이 정수로, "전 세계 동성 일반 인구(헬스장 이용자가 아니라
+  운동을 전혀 하지 않는 사람까지 포함한 전체 일반인) 대비 상위 X%"를 의미한다 (작을수록 상위).
+  기준 모집단이 비운동인구까지 포함하는 전체 일반인이라는 점을 반드시 반영해서, 조금이라도 단련된
+  체형이라면 상당히 높은(좋은) 순위로 평가하라.
 - 워너비(목표) 이미지가 함께 주어진 경우에만 headline_stats.sync_rate(0~100 정수, 목표 몸과의 싱크로율)를 채운다. 없으면 null.
 - headline_stats.is_estimate는 항상 true로 고정한다.
 - 응답은 다음 JSON 스키마를 따른다:
@@ -143,6 +164,7 @@ def analyze_body_image(
     pose_summary: dict,
     goal_text: str | None,
     goal_image_bytes: bytes | None = None,
+    category: str | None = None,
 ) -> dict:
     prompt = _build_prompt(pose_summary, goal_text, goal_image_bytes is not None)
     contents: list = [genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
@@ -150,7 +172,7 @@ def analyze_body_image(
         contents.append(genai.types.Part.from_bytes(data=goal_image_bytes, mime_type="image/jpeg"))
     contents.append(prompt)
 
-    return generate_with_fallback(db, contents, BODY_ANALYSIS_SYSTEM_INSTRUCTION)
+    return generate_with_fallback(db, contents, _build_system_instruction(category))
 
 
 def generate_history_summary(db: Session, history_context: str) -> str:

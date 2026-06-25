@@ -24,6 +24,7 @@ cp .env.example .env   # GEMINI_API_KEY, JWT_SECRET 채우기
 python -m scripts.download_pose_model      # pose landmark 모델(.task) 1회 다운로드
 alembic upgrade head                        # DB 스키마 생성
 python -m scripts.seed_free_exercise_db     # Free Exercise DB(CC0) 운동 데이터 시딩 (873건)
+python -m scripts.seed_curated_exercises    # Free Exercise DB에 없는 부위(전거근 등) 수동 큐레이션 시딩
 
 uvicorn app.main:app --reload
 ```

@@ -6,12 +6,16 @@ export const MUSCLE_KO: Record<string, string> = {
   forearms: "전완",
   lats: "광배근",
   traps: "승모근",
+  "middle back": "등 중부",
   "lower back": "허리",
   abdominals: "복근",
+  "serratus anterior": "전거근",
   glutes: "둔근",
   quadriceps: "대퇴사두근",
   hamstrings: "햄스트링",
   calves: "종아리",
+  abductors: "외전근",
+  adductors: "내전근",
 };
 
 export function muscleLabel(part: string): string {

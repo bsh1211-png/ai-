@@ -235,7 +235,7 @@ export default function ScanDetailPage() {
                       </p>
                     </div>
                     <span className="badge-info text-xs px-2 py-1 rounded-md font-display">
-                      {item.sets}세트 × {item.reps}회
+                      {item.duration_minutes != null ? `${item.duration_minutes}분` : `${item.sets}세트 × ${item.reps}회`}
                     </span>
                   </div>
                 ))}
