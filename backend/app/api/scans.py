@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -110,6 +111,22 @@ async def upload_scan_image(
     db.commit()
     db.refresh(session)
     return session
+
+
+@router.get("/{session_id}/images/{image_id}/file")
+def get_scan_image_file(
+    session_id: uuid.UUID,
+    image_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    session = _get_owned_session(db, session_id, current_user)
+    image = db.get(BodyScanImage, image_id)
+    if image is None or image.session_id != session.id or image.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="이미지를 찾을 수 없습니다")
+
+    content = storage_service.read_bytes(image.storage_path)
+    return Response(content=content, media_type="image/jpeg")
 
 
 @router.post("/{session_id}/analyze", status_code=status.HTTP_202_ACCEPTED)

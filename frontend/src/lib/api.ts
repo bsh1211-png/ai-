@@ -1,0 +1,151 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("access_token");
+}
+
+export function setToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem("access_token", token);
+  else window.localStorage.removeItem("access_token");
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = getToken();
+  const headers = new Headers(options.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (options.body && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+  if (!response.ok) {
+    let message = `요청에 실패했습니다 (${response.status})`;
+    try {
+      const data = await response.json();
+      message = data.detail || message;
+    } catch {
+      // 응답 본문이 JSON이 아닌 경우 기본 메시지 사용
+    }
+    throw new ApiError(response.status, message);
+  }
+
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  get: <T>(path: string) => request<T>(path),
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
+  postForm: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: "POST", body: form }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+};
+
+export interface User {
+  id: string;
+  email: string;
+  is_minor: boolean;
+  guardian_consent_status: string;
+}
+
+export interface SignupResponse {
+  access_token: string;
+  is_minor: boolean;
+  guardian_consent_dev_token: string | null;
+}
+
+export interface ConsentStatus {
+  is_minor: boolean;
+  guardian_consent_status: string;
+  body_image_consent_active: boolean;
+  can_upload: boolean;
+  blocked_reason: string | null;
+}
+
+export interface ScanImage {
+  id: string;
+  angle: string;
+  uploaded_at: string;
+}
+
+export interface ScanSession {
+  id: string;
+  category: string;
+  status: "uploaded" | "processing" | "completed" | "failed";
+  scan_date: string;
+  error_message: string | null;
+  images: ScanImage[];
+}
+
+export interface WeakPoint {
+  part: string;
+  severity: string;
+  comment: string;
+}
+
+export interface AnalysisReport {
+  id: string;
+  summary: string;
+  weak_points: WeakPoint[];
+  recommended_exercise_ids: string[];
+  goal_comparison: { goal_type: string; goal_text: string | null } | null;
+  created_at: string;
+}
+
+export interface Exercise {
+  id: string;
+  name_en: string;
+  name_ko: string | null;
+  category: string | null;
+  primary_muscles: string[];
+  secondary_muscles: string[];
+  equipment: string | null;
+  level: string | null;
+  image_paths: string[];
+  youtube_video_id: string | null;
+}
+
+export interface Goal {
+  id: string;
+  goal_type: string;
+  goal_text: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProgressLog {
+  id: string;
+  weight_kg: number | null;
+  body_fat_pct: number | null;
+  notes: string | null;
+  logged_at: string;
+}
+
+export function exerciseImageUrl(relativePath: string): string {
+  return `${API_URL}/media/${relativePath}`;
+}
+
+export async function fetchAuthedBlobUrl(path: string): Promise<string> {
+  const token = getToken();
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) throw new ApiError(response.status, "이미지를 불러오지 못했습니다");
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
