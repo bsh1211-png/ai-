@@ -15,22 +15,6 @@ PROVIDER_CONFIG = {
         "client_id": settings.google_client_id,
         "client_secret": settings.google_client_secret,
     },
-    OAuthProvider.kakao: {
-        "authorize_url": "https://kauth.kakao.com/oauth/authorize",
-        "token_url": "https://kauth.kakao.com/oauth/token",
-        "userinfo_url": "https://kapi.kakao.com/v2/user/me",
-        "scope": "account_email",
-        "client_id": settings.kakao_client_id,
-        "client_secret": settings.kakao_client_secret,
-    },
-    OAuthProvider.naver: {
-        "authorize_url": "https://nid.naver.com/oauth2.0/authorize",
-        "token_url": "https://nid.naver.com/oauth2.0/token",
-        "userinfo_url": "https://openapi.naver.com/v1/nid/me",
-        "scope": "email",
-        "client_id": settings.naver_client_id,
-        "client_secret": settings.naver_client_secret,
-    },
 }
 
 
@@ -89,18 +73,8 @@ def _fetch_userinfo(provider: OAuthProvider, access_token: str) -> OAuthUserInfo
     response.raise_for_status()
     data = response.json()
 
-    if provider == OAuthProvider.google:
-        email = data.get("email")
-        external_id = data.get("sub")
-    elif provider == OAuthProvider.kakao:
-        external_id = str(data.get("id"))
-        email = (data.get("kakao_account") or {}).get("email")
-    elif provider == OAuthProvider.naver:
-        inner = data.get("response") or {}
-        external_id = inner.get("id")
-        email = inner.get("email")
-    else:
-        raise ValueError(f"알 수 없는 provider: {provider}")
+    email = data.get("email")
+    external_id = data.get("sub")
 
     if not email:
         raise OAuthEmailMissing(f"{provider.value} 계정에서 이메일 동의 정보를 가져오지 못했습니다")

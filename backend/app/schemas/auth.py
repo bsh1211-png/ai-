@@ -1,22 +1,7 @@
 import uuid
 from datetime import date
 
-from pydantic import BaseModel, EmailStr, Field
-
-
-class SignupRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8)
-    birth_date: date
-    accept_terms: bool
-    accept_privacy: bool
-    accept_marketing: bool = False
-    guardian_email: EmailStr | None = None
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+from pydantic import BaseModel, EmailStr
 
 
 class TokenResponse(BaseModel):

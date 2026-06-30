@@ -14,6 +14,10 @@ backend/dev.db
 backend/storage/
 backend/app/ml_models/*.task
 
+# 비밀 정보 (Google OAuth 클라이언트 시크릿 등) - 절대 커밋 금지
+client_secret_*.json
+*.apps.googleusercontent.com.json
+
 # OS
 .DS_Store
 

@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -20,11 +21,15 @@ from app.services import oauth_providers
 from app.services.oauth_providers import OAuthEmailMissing, OAuthNotConfigured
 from app.services.user_signup import create_user_and_consents
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth/oauth", tags=["oauth"])
 
 
 @router.get("/{provider}/start")
 def oauth_start(provider: OAuthProvider):
+    if provider != OAuthProvider.google:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google 로그인만 지원합니다")
     try:
         state = create_oauth_state_token(provider.value)
         url = oauth_providers.build_authorize_url(provider, state)
@@ -37,6 +42,9 @@ def oauth_start(provider: OAuthProvider):
 def oauth_callback(provider: OAuthProvider, code: str = Query(...), state: str = Query(...)):
     frontend_complete_url = f"{settings.frontend_base_url}/oauth/complete"
 
+    if provider != OAuthProvider.google:
+        return RedirectResponse(f"{frontend_complete_url}?{urlencode({'error': 'Google 로그인만 지원합니다'})}")
+
     if not decode_oauth_state_token(state, provider.value):
         return RedirectResponse(f"{frontend_complete_url}?{urlencode({'error': '유효하지 않은 요청입니다'})}")
 
@@ -45,6 +53,7 @@ def oauth_callback(provider: OAuthProvider, code: str = Query(...), state: str =
     except OAuthEmailMissing as error:
         return RedirectResponse(f"{frontend_complete_url}?{urlencode({'error': str(error)})}")
     except Exception:
+        logger.exception("OAuth 콜백 처리 실패 (provider=%s)", provider.value)
         return RedirectResponse(
             f"{frontend_complete_url}?{urlencode({'error': '소셜 로그인 처리 중 오류가 발생했습니다'})}"
         )
@@ -58,19 +67,6 @@ def oauth_callback(provider: OAuthProvider, code: str = Query(...), state: str =
         )
         if existing:
             token = create_access_token(existing.id)
-            return RedirectResponse(f"{frontend_complete_url}?{urlencode({'token': token})}")
-
-        by_email = db.query(User).filter(User.email == user_info.email).first()
-        if by_email and by_email.oauth_provider and by_email.oauth_provider != provider:
-            return RedirectResponse(
-                f"{frontend_complete_url}?{urlencode({'error': '이미 다른 소셜 계정으로 가입된 이메일입니다'})}"
-            )
-        if by_email and not by_email.oauth_provider:
-            # 기존 이메일/비밀번호 계정에 소셜 로그인 연동
-            by_email.oauth_provider = provider
-            by_email.oauth_id = user_info.external_id
-            db.commit()
-            token = create_access_token(by_email.id)
             return RedirectResponse(f"{frontend_complete_url}?{urlencode({'token': token})}")
 
         # 신규 가입: 생년월일/동의가 더 필요하므로 임시 토큰만 발급

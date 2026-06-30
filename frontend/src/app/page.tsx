@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { api, type AnalysisReport, type ScanSession } from "@/lib/api";
+import { api, API_URL, type AnalysisReport, type ScanSession } from "@/lib/api";
 import { CATEGORY_KO } from "@/lib/muscle-labels";
 
 function greeting(): string {
@@ -75,14 +75,10 @@ export default function Home() {
         <p className="text-text-secondary text-sm">
           사진으로 신체를 분석하고, 부족한 부위에 맞는 운동과 루틴을 추천받는 개인 PT 에이전트입니다.
         </p>
-        <div className="flex gap-3">
-          <Link href="/signup" className="btn-primary text-center flex-1">
-            시작하기
-          </Link>
-          <Link href="/login" className="btn-secondary text-center flex-1 flex items-center justify-center">
-            로그인
-          </Link>
-        </div>
+        <a href={`${API_URL}/auth/oauth/google/start`} className="btn-primary text-center block">
+          시작하기
+        </a>
+        <p className="text-xs text-text-dim text-center">Google 계정으로 간편하게 시작할 수 있어요</p>
       </div>
     );
   }

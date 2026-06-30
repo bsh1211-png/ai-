@@ -24,11 +24,10 @@ def create_user_and_consents(
     accept_privacy: bool,
     accept_marketing: bool,
     guardian_email: str | None,
-    password_hash: str | None = None,
     oauth_provider: OAuthProvider | None = None,
     oauth_id: str | None = None,
 ) -> User:
-    """이메일/소셜 가입 공통 로직: 동의 검증, 나이 검증, User + 1레이어 동의 레코드 생성."""
+    """Google OAuth 가입 공통 로직: 동의 검증, 나이 검증, User + 동의 레코드 생성."""
     if not accept_terms or not accept_privacy:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,7 +53,6 @@ def create_user_and_consents(
 
     user = User(
         email=email,
-        password_hash=password_hash,
         oauth_provider=oauth_provider,
         oauth_id=oauth_id,
         birth_date=birth_date,

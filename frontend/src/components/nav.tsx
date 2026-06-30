@@ -39,14 +39,9 @@ export function Nav() {
             로그아웃
           </button>
         ) : (
-          <div className="flex items-center gap-3 text-text-secondary">
-            <Link href="/login" className="hover:text-text-primary">
-              로그인
-            </Link>
-            <Link href="/signup" className="hover:text-text-primary">
-              가입
-            </Link>
-          </div>
+          <Link href="/login" className="text-text-secondary hover:text-text-primary text-sm">
+            로그인
+          </Link>
         )}
       </div>
     </nav>
