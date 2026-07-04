@@ -39,10 +39,10 @@ function RecentAnalysisCard() {
 
   return (
     <Link href={`/scan/${session.id}`} className="card block space-y-3">
-      <p className="text-xs text-text-secondary">최근 분석</p>
+      <p className="label">Latest Scan <span className="text-text-secondary normal-case">· 최근 분석</span></p>
       <div className="flex items-end justify-between">
-        <p className="font-display font-extrabold text-2xl gradient-score">
-          상위 {stats?.percentile ?? "-"}%
+        <p className="display-number text-5xl gradient-score">
+          {stats?.percentile ?? "-"}<span className="text-2xl">%</span>
         </p>
         <div className="flex gap-1.5">
           {stats?.body_fat_estimate_pct != null && (
@@ -68,46 +68,72 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="space-y-5 pt-10">
-        <h1 className="text-2xl font-bold text-text-primary">
-          내 몸을 분석하고, 목표 몸에 맞는 운동을 추천받자
+      <div className="pt-2 sm:pt-8">
+        <p className="label mb-4">AI Physique Analysis · AI 체형 분석</p>
+        <h1 className="hero-headline text-text-primary">
+          FIND YOUR<br />
+          <span className="text-accent-cyan cyan-glow">PHYSIQUE</span>
         </h1>
-        <p className="text-text-secondary text-sm">
-          사진으로 신체를 분석하고, 부족한 부위에 맞는 운동과 루틴을 추천받는 개인 PT 에이전트입니다.
+        <p className="text-text-secondary text-sm mt-5 mb-8">
+          AI가 당신의 체형을 분석하고, 부족한 부위에 맞는 운동과 루틴을 추천합니다.
         </p>
-        <a href={`${API_URL}/auth/oauth/google/start`} className="btn-primary text-center block">
-          시작하기
+        <a
+          href={`${API_URL}/auth/oauth/google/start`}
+          className="btn-primary text-center block cyan-glow-strong"
+        >
+          Start Analysis · 분석 시작
         </a>
-        <p className="text-xs text-text-dim text-center">Google 계정으로 간편하게 시작할 수 있어요</p>
+        <p className="label text-center mt-4 normal-case" style={{ textTransform: "none", letterSpacing: 0 }}>
+          Google 계정으로 간편하게 시작할 수 있어요
+        </p>
+        <p className="hashtag text-center mt-10 text-lg">#SWOLEMETER</p>
+      </div>
+    );
+  }
+
+  if (user.is_banned) {
+    return (
+      <div className="space-y-5 pt-6">
+        <p className="label">Account Suspended <span className="text-text-secondary normal-case">· 계정 정지</span></p>
+        <h1 className="hero-headline-kr text-accent-red">계정 정지</h1>
+        <div className="card" style={{ borderColor: "var(--color-accent-red)" }}>
+          <p className="text-sm text-text-secondary leading-relaxed">
+            부적절한 이미지 업로드가 누적되어 계정 이용이 영구 정지되었습니다. 분석 기능을 사용할 수 없습니다.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary">
-        {greeting()}, {user.email.split("@")[0]}님
-      </h1>
+      <div>
+        <p className="label">{greeting()}</p>
+        <h1 className="hero-headline-kr text-text-primary mt-2">
+          {user.email.split("@")[0]}
+        </h1>
+      </div>
 
-      <Link href="/scan/new" className="card flex items-center gap-4 active:scale-[0.98] transition">
-        <span
-          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-2xl"
-          style={{ background: "linear-gradient(135deg, #00E5FF, #A855F7)" }}
-        >
-          ◎
-        </span>
+      <Link
+        href="/scan/new"
+        className="card flex items-center justify-between gap-4 active:scale-[0.98] transition cyan-glow-strong"
+        style={{ borderColor: "var(--color-accent-cyan)" }}
+      >
         <div>
-          <p className="font-bold text-text-primary">신체 분석 시작</p>
-          <p className="text-xs text-text-secondary mt-0.5">사진을 찍고 AI가 체형을 분석합니다</p>
+          <p className="label-big text-accent-cyan text-3xl">Start Analysis</p>
+          <p className="text-xs text-text-secondary mt-1">분석 시작 · 사진을 찍고 AI가 체형을 분석합니다</p>
         </div>
+        <span className="text-accent-cyan text-3xl shrink-0">→</span>
       </Link>
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/goals" className="card text-center py-5">
-          <p className="text-sm font-medium text-text-primary">목표 설정</p>
+          <p className="label-big text-text-primary text-xl">Goal</p>
+          <p className="text-xs text-text-secondary mt-1">목표 설정</p>
         </Link>
         <Link href="/history" className="card text-center py-5">
-          <p className="text-sm font-medium text-text-primary">기록 보기</p>
+          <p className="label-big text-text-primary text-xl">History</p>
+          <p className="text-xs text-text-secondary mt-1">기록 보기</p>
         </Link>
       </div>
 

@@ -16,13 +16,11 @@ function OAuthCompleteInner() {
   const initialError = searchParams.get("error");
 
   const [birthDate, setBirthDate] = useState("");
-  const [guardianEmail, setGuardianEmail] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [submitting, setSubmitting] = useState(false);
-  const [devGuardianToken, setDevGuardianToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -46,13 +44,8 @@ function OAuthCompleteInner() {
         accept_terms: acceptTerms,
         accept_privacy: acceptPrivacy,
         accept_marketing: acceptMarketing,
-        guardian_email: guardianEmail || undefined,
       });
       await login(result.access_token);
-      if (result.is_minor && result.guardian_consent_dev_token) {
-        setDevGuardianToken(result.guardian_consent_dev_token);
-        return;
-      }
       router.push("/onboarding/body-image-consent");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "가입 처리 중 오류가 발생했습니다");
@@ -63,17 +56,6 @@ function OAuthCompleteInner() {
 
   if (token) {
     return <p className="text-sm text-text-secondary">로그인 처리 중...</p>;
-  }
-
-  if (devGuardianToken) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-text-primary">가입 완료 — 법정대리인 동의 필요</h1>
-        <a href={`/consents/guardian-confirm?token=${devGuardianToken}`} className="btn-primary inline-block">
-          (개발용) 법정대리인 동의 페이지로 이동
-        </a>
-      </div>
-    );
   }
 
   if (!pendingToken) {
@@ -97,14 +79,7 @@ function OAuthCompleteInner() {
       <div className="space-y-1">
         <label className="text-sm font-medium text-text-primary">생년월일</label>
         <input type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full" />
-        <p className="text-xs text-text-secondary">
-          만 14세 미만은 가입할 수 없으며, 만 14~18세는 법정대리인 동의가 필요합니다.
-        </p>
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-text-primary">법정대리인 이메일 (미성년자만 필요)</label>
-        <input type="email" value={guardianEmail} onChange={(e) => setGuardianEmail(e.target.value)} className="w-full" />
+        <p className="text-xs text-text-secondary">만 14세 미만은 가입할 수 없습니다.</p>
       </div>
 
       <div className="card space-y-2">

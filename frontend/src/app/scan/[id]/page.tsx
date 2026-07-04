@@ -14,31 +14,27 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "분석 실패",
 };
 
-function ScoreColumn({ label, value, suffix, gradient, color }: { label: string; value: number | null; suffix: string; gradient?: boolean; color?: string }) {
+const DIRECTION_LABEL: Record<string, string> = {
+  bulk_up: "🔺 벌크업 방향",
+  slim_down: "🔻 슬림·감량 방향",
+  recomposition: "♻️ 재구성 방향",
+  maintain: "✅ 유지",
+};
+
+// 목표 대비 방향: 키우기 / 줄이기 / 데피니션 / 유지
+const GOAL_ACTION_BADGE: Record<string, { label: string; cls: string }> = {
+  grow: { label: "키우기", cls: "badge-info" },
+  reduce: { label: "줄이기", cls: "badge-warning" },
+  definition: { label: "데피니션", cls: "badge-success" },
+  maintain: { label: "유지", cls: "badge-success" },
+};
+
+// 영어 라벨(크게) + 한국어(작게) 형식
+function BiLabel({ en, ko, color, className = "" }: { en: string; ko: string; color?: string; className?: string }) {
   return (
-    <div className="flex-1 text-center py-2">
-      <p className="text-xs text-text-secondary mb-1">{label}</p>
-      {value === null ? (
-        <p className="text-text-dim text-sm">데이터 없음</p>
-      ) : (
-        <p
-          className="font-display font-black leading-none"
-          style={{
-            fontSize: "clamp(2.2rem, 12vw, 3.5rem)",
-            ...(gradient
-              ? {
-                  background: "linear-gradient(135deg, #00E5FF, #A855F7)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                }
-              : { color }),
-          }}
-        >
-          {value}
-          <span style={{ fontSize: "clamp(1rem, 5vw, 1.4rem)" }}>{suffix}</span>
-        </p>
-      )}
+    <div className={className}>
+      <p className="label" style={color ? { color } : undefined}>{en}</p>
+      <p className="text-xs text-text-secondary tracking-wide mt-0.5">{ko}</p>
     </div>
   );
 }
@@ -108,8 +104,9 @@ export default function ScanDetailPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-text-primary">분석 결과</h1>
-        <p className="text-sm text-text-secondary">{STATUS_LABEL[session.status] ?? session.status}</p>
+        <p className="label">Analysis Result</p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">분석 결과</h1>
+        <p className="text-sm text-text-secondary mt-2">{STATUS_LABEL[session.status] ?? session.status}</p>
       </div>
 
       {session.status === "processing" && (
@@ -120,7 +117,11 @@ export default function ScanDetailPage() {
 
       {session.status === "failed" && (
         <div className="space-y-3">
-          <p className="text-sm text-accent-red">{session.error_message ?? "분석에 실패했습니다"}</p>
+          <div className="card" style={{ borderColor: "var(--color-accent-red)" }}>
+            <p className="text-sm text-accent-red whitespace-pre-line leading-relaxed">
+              {session.error_message ?? "분석에 실패했습니다"}
+            </p>
+          </div>
           <Link href="/scan/new" className="btn-primary inline-block text-center">
             다시 촬영하기
           </Link>
@@ -129,60 +130,109 @@ export default function ScanDetailPage() {
 
       {report && stats && (
         <div className="space-y-8">
-          {/* 스코어 카드 */}
-          <div className="card relative overflow-hidden">
+          {/* 히어로 스코어 — 화면을 채우는 거대 숫자 */}
+          <div className="relative overflow-hidden text-center py-6">
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(circle at 50% 0%, rgba(0,229,255,0.12), transparent 70%)",
+                  "radial-gradient(circle at 50% 30%, rgba(0,184,255,0.18), transparent 70%)",
               }}
             />
-            <div className="relative flex divide-x" style={{ borderColor: "var(--color-border)" }}>
-              <ScoreColumn label="일반인 대비 상위" value={stats.percentile} suffix="%" gradient />
-              <ScoreColumn label="목표 싱크율" value={stats.sync_rate} suffix="%" color="#FF6B35" />
+            <div className="relative">
+              <p className="label">Ranked In Top</p>
+              <p className="text-sm text-text-secondary tracking-widest mt-0.5">상위</p>
+              {stats.percentile === null ? (
+                <p className="text-text-dim text-sm mt-4">데이터 없음</p>
+              ) : (
+                <p
+                  className="display-number text-accent-cyan cyan-glow mt-2"
+                  style={{ fontSize: "clamp(80px, 24vw, 200px)" }}
+                >
+                  {stats.percentile}<span style={{ fontSize: "clamp(28px, 8vw, 64px)" }}>%</span>
+                </p>
+              )}
+              <p className="hashtag text-base mt-6">#SWOLEMETER</p>
             </div>
           </div>
 
-          {/* 수치 뱃지 행 */}
-          <div className="grid grid-cols-2 gap-3 text-center">
-            <div className="card py-3">
-              <p className="text-xs text-text-secondary mb-1">체지방률</p>
-              <p className="font-display font-extrabold text-xl" style={{ color: "#39FF14" }}>
-                {stats.body_fat_estimate_pct ?? "-"}%
+          {/* 3대 수치 — 바디팻 / 대칭 / 목표 일치율 (목표 있을 때만 3열) */}
+          <div className={`grid ${stats.sync_rate !== null ? "grid-cols-3" : "grid-cols-2"} gap-3 text-center`}>
+            <div className="card py-4 px-2">
+              <BiLabel en="Body Fat" ko="체지방" className="mb-2" />
+              <p className="display-number text-3xl" style={{ color: "#39FF14" }}>
+                {stats.body_fat_estimate_pct ?? "-"}<span className="text-lg">%</span>
               </p>
             </div>
-            <div className="card py-3">
-              <p className="text-xs text-text-secondary mb-1">대칭 점수</p>
-              <p className="font-display font-extrabold text-xl" style={{ color: "#00E5FF" }}>
+            <div className="card py-4 px-2">
+              <BiLabel en="Symmetry" ko="대칭" className="mb-2" />
+              <p className="display-number text-3xl text-accent-cyan">
                 {stats.symmetry_score ?? "-"}
               </p>
             </div>
+            {stats.sync_rate !== null && (
+              <div className="card py-4 px-2" style={{ borderColor: "#FF6B35" }}>
+                <BiLabel en="Goal Match" ko="목표 일치율" color="#FF6B35" className="mb-2" />
+                <p className="display-number text-3xl" style={{ color: "#FF6B35" }}>
+                  {stats.sync_rate}<span className="text-lg">%</span>
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* 신체 총평 */}
+          {/* 신체 총평 — 목표와 무관한 전체적·객관적 평가 (먼저 표시) */}
           <div className="card">
-            <p className="text-sm font-semibold text-text-primary mb-2">신체 총평</p>
+            <p className="section-label mb-2">Overall <span className="sub">· 신체 총평</span></p>
             <p className="text-sm text-text-secondary whitespace-pre-wrap">{report.summary}</p>
           </div>
 
+          {/* 목표 대비 분석 (목표가 설정된 경우, 총평 다음에 표시) */}
+          {report.goal_comparison?.feedback && (
+            <div className="card" style={{ borderColor: "#FF6B35" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="section-label" style={{ color: "#FF6B35" }}>
+                  Goal Analysis <span className="sub">· 목표 대비 분석</span>
+                </p>
+                {report.goal_comparison.direction && (
+                  <span className="text-xs px-2 py-0.5 rounded badge-warning">
+                    {DIRECTION_LABEL[report.goal_comparison.direction] ?? report.goal_comparison.direction}
+                  </span>
+                )}
+              </div>
+              {report.goal_comparison.goal_text && (
+                <p className="text-xs text-text-dim mb-2">🎯 목표: {report.goal_comparison.goal_text}</p>
+              )}
+              <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                {report.goal_comparison.feedback}
+              </p>
+            </div>
+          )}
+
           {/* 보완이 필요한 부위 */}
           <div>
-            <p className="text-sm font-semibold text-text-primary mb-2">보완이 필요한 부위</p>
+            <p className="section-label mb-3">Weak Points <span className="sub">· 보완 부위</span></p>
             <ul className="space-y-2">
               {report.weak_points.map((wp, i) => {
+                const isReduce = wp.goal_action === "reduce";
                 const isMinor = wp.severity === "low";
-                const barColor = isMinor ? "#39FF14" : "#FF6B35";
+                const barColor = isReduce ? "#FF6B35" : isMinor ? "#39FF14" : "#FF6B35";
+                const actionBadge = wp.goal_action ? GOAL_ACTION_BADGE[wp.goal_action] : null;
                 return (
                   <li key={i} className="card relative pl-5 overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: barColor }} />
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-text-primary">{muscleLabel(wp.part)}</span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-md ${isMinor ? "badge-success" : "badge-warning"}`}
-                      >
-                        {isMinor ? "미세 조정" : "보완 필요"}
-                      </span>
+                      {actionBadge ? (
+                        <span className={`text-xs px-2 py-0.5 rounded-md ${actionBadge.cls}`}>
+                          {actionBadge.label}
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-md ${isMinor ? "badge-success" : "badge-warning"}`}
+                        >
+                          {isMinor ? "미세 조정" : "보완 필요"}
+                        </span>
+                      )}
                     </div>
                     <p className="text-text-secondary text-sm mt-1">{wp.comment}</p>
                   </li>
@@ -193,7 +243,7 @@ export default function ScanDetailPage() {
 
           {exercises.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-text-primary mb-3">추천 운동</p>
+              <p className="section-label mb-3">Recommended <span className="sub">· 추천 운동</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {exercises.map((ex) => (
                   <div key={ex.id} className="card space-y-2">
@@ -202,7 +252,7 @@ export default function ScanDetailPage() {
                       <img
                         src={exerciseImageUrl(ex.image_paths[0])}
                         alt={ex.name_en}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-32 object-cover rounded analysis-photo"
                       />
                     )}
                     <p className="text-sm font-medium text-text-primary">{ex.name_ko || ex.name_en}</p>
@@ -224,7 +274,7 @@ export default function ScanDetailPage() {
 
           {report.recommended_routine && report.recommended_routine.items.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-text-primary mb-3">추천 루틴</p>
+              <p className="section-label mb-3">Routine <span className="sub">· 추천 루틴</span></p>
               <div className="card divide-y" style={{ padding: 0 }}>
                 {report.recommended_routine.items.map((item, i) => (
                   <div key={i} className="flex items-center justify-between px-5 py-3 text-sm" style={{ borderColor: "var(--color-border)" }}>

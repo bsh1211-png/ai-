@@ -61,11 +61,14 @@ function AnglesInner() {
     }
   };
 
+  const ANGLE_EN: Record<string, string> = { front: "FRONT", back: "BACK", side: "SIDE" };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary">
-        {CATEGORY_KO[category]} — 어떤 각도를 찍을까요?
-      </h1>
+      <div>
+        <p className="label">Angles <span className="text-text-secondary normal-case">· {CATEGORY_KO[category]} 각도 선택</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">어떤 각도를 찍을까요?</h1>
+      </div>
       <div className="space-y-3">
         {options.map((opt) => {
           const checked = selected.includes(opt.value);
@@ -74,22 +77,30 @@ function AnglesInner() {
               key={opt.value}
               type="button"
               onClick={() => toggle(opt.value)}
-              className="w-full flex items-center gap-3 rounded-2xl border px-4 py-4 min-h-11 text-left"
-              style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
+              className="w-full flex items-center gap-3 rounded border px-5 py-4 min-h-11 text-left transition"
+              style={{
+                borderColor: checked ? "var(--color-accent-cyan)" : "var(--color-border)",
+                background: checked ? "rgba(0,184,255,0.10)" : "var(--color-surface)",
+              }}
             >
               <span
-                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-xs font-bold"
+                className="w-6 h-6 rounded-sm flex items-center justify-center shrink-0 text-xs font-bold"
                 style={{
                   background: checked ? "var(--color-accent-cyan)" : "transparent",
                   border: checked ? "none" : "1px solid var(--color-border)",
-                  color: "#0A0A0F",
+                  color: "#000000",
                 }}
               >
                 {checked && "✓"}
               </span>
               <div>
-                <p className="text-sm font-medium text-text-primary">{opt.label}</p>
-                <p className="text-xs text-text-secondary mt-0.5">{opt.desc}</p>
+                <p
+                  className="label-big text-xl"
+                  style={{ color: checked ? "var(--color-accent-cyan)" : "var(--color-text-primary)" }}
+                >
+                  {ANGLE_EN[opt.value] ?? opt.value}
+                </p>
+                <p className="text-xs text-text-secondary mt-0.5">{opt.label} · {opt.desc}</p>
               </div>
             </button>
           );

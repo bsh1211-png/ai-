@@ -9,6 +9,7 @@ export default function GoalsPage() {
   const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   const [refFile, setRefFile] = useState<File | null>(null);
   const [refPreview, setRefPreview] = useState<string | null>(null);
@@ -48,9 +49,11 @@ export default function GoalsPage() {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setSavedMsg(null);
     try {
       const goal = await api.post<Goal>("/goals", { goal_text: goalText });
       setActiveGoal(goal);
+      setSavedMsg("✅ 목표가 저장되었어요. 다음 신체 분석부터 이 목표 대비 일치율과 방향 조언이 표시됩니다.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "목표 설정 중 오류가 발생했습니다");
     } finally {
@@ -75,6 +78,11 @@ export default function GoalsPage() {
       setActiveGoal(updated);
       if (updated.goal_text) setGoalText(updated.goal_text);
       setRefFile(null);
+      setSavedMsg(
+        updated.goal_text
+          ? `✅ 워너비 사진을 분석했어요! AI가 파악한 목표 체형: "${updated.goal_text}"`
+          : "✅ 워너비 사진이 저장되었어요."
+      );
     } catch (err) {
       setRefError(err instanceof ApiError ? err.message : "업로드 중 오류가 발생했습니다");
     } finally {
@@ -84,25 +92,47 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary">목표(워너비) 몸 설정</h1>
+      <div>
+        <p className="label">Your Goal <span className="text-text-secondary normal-case">· 목표 설정</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">워너비 체형을 설정하세요</h1>
+      </div>
+
+      {/* 현재 설정된 목표 */}
+      {activeGoal?.goal_text ? (
+        <div className="card" style={{ borderColor: "var(--color-accent-cyan)" }}>
+          <p className="label mb-1" style={{ color: "var(--color-accent-cyan)" }}>Current Goal <span className="normal-case" style={{ color: "var(--color-text-secondary)" }}>· 현재 목표</span></p>
+          <p className="text-sm text-text-primary">🎯 {activeGoal.goal_text}</p>
+        </div>
+      ) : (
+        <p className="text-sm text-text-secondary">
+          아직 설정된 목표가 없어요. 사진이나 글로 워너비 체형을 등록하면, 신체 분석 때 목표 일치율과 방향 조언을 받을 수 있어요.
+        </p>
+      )}
+
+      {/* 저장 완료 알림 */}
+      {savedMsg && (
+        <div className="card" style={{ borderColor: "var(--color-accent-green)", background: "rgba(57,255,20,0.06)" }}>
+          <p className="text-sm text-text-primary leading-relaxed">{savedMsg}</p>
+        </div>
+      )}
 
       {/* 워너비 사진 업로드 */}
       <div className="space-y-3">
         <label
-          className="w-full flex flex-col items-center justify-center gap-2 rounded-2xl py-8 cursor-pointer relative overflow-hidden"
-          style={{ border: "2px dashed var(--color-border)" }}
+          className="w-full flex flex-col items-center justify-center gap-2 rounded py-8 cursor-pointer relative overflow-hidden"
+          style={{ border: "2px dashed var(--color-accent-cyan)", boxShadow: "0 0 24px rgba(0,184,255,0.12) inset" }}
         >
           {refPreview || activeGoal?.reference_image_path ? (
             <>
               {refPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={refPreview} alt="워너비 미리보기" className="w-full h-40 object-cover rounded-xl" />
+                <img src={refPreview} alt="워너비 미리보기" className="w-full h-40 object-cover rounded analysis-photo" />
               ) : (
                 activeGoal && (
                   <AuthedImage
                     path={`/goals/${activeGoal.id}/reference-image/file`}
                     alt="워너비 목표 사진"
-                    className="w-full h-40 object-cover rounded-xl"
+                    className="w-full h-40 object-cover rounded analysis-photo"
                   />
                 )
               )}

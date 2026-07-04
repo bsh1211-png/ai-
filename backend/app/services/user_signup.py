@@ -23,7 +23,6 @@ def create_user_and_consents(
     accept_terms: bool,
     accept_privacy: bool,
     accept_marketing: bool,
-    guardian_email: str | None,
     oauth_provider: OAuthProvider | None = None,
     oauth_id: str | None = None,
 ) -> User:
@@ -44,12 +43,8 @@ def create_user_and_consents(
     if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="이미 가입된 이메일입니다")
 
+    # 법정대리인 동의 절차는 제거됨. 나이는 통계/표시용으로만 기록한다.
     is_minor = age < ADULT_AGE
-    if is_minor and not guardian_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="미성년자는 법정대리인 이메일이 필요합니다",
-        )
 
     user = User(
         email=email,
@@ -57,8 +52,8 @@ def create_user_and_consents(
         oauth_id=oauth_id,
         birth_date=birth_date,
         is_minor=is_minor,
-        guardian_consent_status=GuardianConsentStatus.pending if is_minor else GuardianConsentStatus.na,
-        guardian_email=guardian_email if is_minor else None,
+        guardian_consent_status=GuardianConsentStatus.na,
+        guardian_email=None,
     )
     db.add(user)
     db.flush()

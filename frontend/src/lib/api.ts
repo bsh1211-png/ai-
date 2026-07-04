@@ -60,18 +60,16 @@ export interface User {
   id: string;
   email: string;
   is_minor: boolean;
-  guardian_consent_status: string;
+  is_banned: boolean;
 }
 
 export interface SignupResponse {
   access_token: string;
   is_minor: boolean;
-  guardian_consent_dev_token: string | null;
 }
 
 export interface ConsentStatus {
   is_minor: boolean;
-  guardian_consent_status: string;
   body_image_consent_active: boolean;
   can_upload: boolean;
   blocked_reason: string | null;
@@ -96,6 +94,15 @@ export interface WeakPoint {
   part: string;
   severity: string;
   comment: string;
+  goal_action?: "grow" | "reduce" | "definition" | "maintain";
+}
+
+export interface GoalComparison {
+  goal_type: string;
+  goal_text: string | null;
+  sync_rate?: number | null;
+  direction?: "bulk_up" | "slim_down" | "recomposition" | "maintain" | null;
+  feedback?: string | null;
 }
 
 export interface HeadlineStats {
@@ -127,7 +134,7 @@ export interface AnalysisReport {
   summary: string;
   weak_points: WeakPoint[];
   recommended_exercise_ids: string[];
-  goal_comparison: { goal_type: string; goal_text: string | null } | null;
+  goal_comparison: GoalComparison | null;
   headline_stats: HeadlineStats | null;
   recommended_routine: Routine | null;
   created_at: string;

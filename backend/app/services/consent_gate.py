@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.user import BodyImageConsent, BodyImageConsentType, GuardianConsentStatus, User
+from app.models.user import BodyImageConsent, BodyImageConsentType, User
 
 
 def active_body_image_consent(db: Session, user: User) -> BodyImageConsent | None:
@@ -22,6 +22,4 @@ def upload_block_reason(db: Session, user: User) -> str | None:
     consent = active_body_image_consent(db, user)
     if consent is None:
         return "카메라/신체사진 사용 동의가 필요합니다"
-    if user.is_minor and user.guardian_consent_status != GuardianConsentStatus.approved:
-        return "법정대리인 동의가 완료되어야 업로드할 수 있습니다"
     return None

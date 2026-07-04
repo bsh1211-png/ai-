@@ -1,26 +1,17 @@
-def _signup(client, email, birth_date, guardian_email=None):
-    payload = {
-        "email": email,
-        "password": "testpassword123",
-        "birth_date": birth_date,
-        "accept_terms": True,
-        "accept_privacy": True,
-    }
-    if guardian_email:
-        payload["guardian_email"] = guardian_email
-    return client.post("/auth/signup", json=payload)
+from app.core.constants import NSFW_STRIKE_LIMIT
+from app.models.user import User
+from app.services import moderation
 
 
 def _auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_adult_signup_and_consent_flow(client):
-    resp = _signup(client, "adult@example.com", "1995-01-01")
+def test_adult_signup_and_consent_flow(client, signup):
+    resp = signup("adult@example.com", "1995-01-01")
     assert resp.status_code == 201
     body = resp.json()
     assert body["is_minor"] is False
-    assert body["guardian_consent_dev_token"] is None
     token = body["access_token"]
 
     status_resp = client.get("/consents/me", headers=_auth_headers(token))
@@ -36,49 +27,27 @@ def test_adult_signup_and_consent_flow(client):
     assert status_resp.json()["can_upload"] is True
 
 
-def test_signup_rejects_under_14(client):
-    resp = _signup(client, "kid@example.com", "2018-01-01")
+def test_signup_rejects_under_14(client, signup):
+    resp = signup("kid@example.com", "2018-01-01")
     assert resp.status_code == 400
 
 
-def test_minor_requires_guardian_consent_before_upload(client):
-    resp = _signup(client, "teen@example.com", "2012-01-01", guardian_email="guardian@example.com")
+def test_minor_signs_up_without_guardian(client, signup):
+    """법정대리인 절차는 제거됨 — 만 14~18세도 별도 동의 없이 가입/이용 가능."""
+    resp = signup("teen@example.com", "2012-01-01")
     assert resp.status_code == 201
     body = resp.json()
     assert body["is_minor"] is True
-    guardian_token = body["guardian_consent_dev_token"]
-    assert guardian_token
-
     token = body["access_token"]
+
     client.post("/consents/body-image", json={"consented": True}, headers=_auth_headers(token))
-
     status_resp = client.get("/consents/me", headers=_auth_headers(token))
-    assert status_resp.json()["can_upload"] is False
-    assert "법정대리인" in status_resp.json()["blocked_reason"]
-
-    confirm_resp = client.post("/consents/guardian/confirm", json={"token": guardian_token})
-    assert confirm_resp.status_code == 200
-
-    status_resp = client.get("/consents/me", headers=_auth_headers(token))
+    # 신체사진 동의만 하면 미성년자도 바로 업로드 가능
     assert status_resp.json()["can_upload"] is True
 
 
-def test_login(client):
-    _signup(client, "login@example.com", "1990-01-01")
-    resp = client.post(
-        "/auth/login", json={"email": "login@example.com", "password": "testpassword123"}
-    )
-    assert resp.status_code == 200
-    assert "access_token" in resp.json()
-
-    bad_resp = client.post(
-        "/auth/login", json={"email": "login@example.com", "password": "wrongpassword"}
-    )
-    assert bad_resp.status_code == 401
-
-
-def test_revoke_body_image_consent_blocks_upload(client):
-    resp = _signup(client, "revoke@example.com", "1990-01-01")
+def test_revoke_body_image_consent_blocks_upload(client, signup):
+    resp = signup("revoke@example.com", "1990-01-01")
     token = resp.json()["access_token"]
     client.post("/consents/body-image", json={"consented": True}, headers=_auth_headers(token))
     assert client.get("/consents/me", headers=_auth_headers(token)).json()["can_upload"] is True
@@ -87,3 +56,30 @@ def test_revoke_body_image_consent_blocks_upload(client):
     assert revoke_resp.status_code == 200
 
     assert client.get("/consents/me", headers=_auth_headers(token)).json()["can_upload"] is False
+
+
+def test_nsfw_strike_accumulates_and_bans(client, signup):
+    """노골적 이미지 스트라이크가 누적되고, 한도 도달 시 밴되며 이후 업로드가 차단된다."""
+    resp = signup("nsfw@example.com", "1995-01-01")
+    token = resp.json()["access_token"]
+    headers = _auth_headers(token)
+
+    db = client.TestingSessionLocal()
+    user = db.query(User).filter(User.email == "nsfw@example.com").first()
+
+    # 한도-1 회까지는 밴되지 않는다.
+    for i in range(NSFW_STRIKE_LIMIT - 1):
+        strikes, banned = moderation.register_nsfw_strike(db, user)
+        assert strikes == i + 1
+        assert banned is False
+
+    # 한도 도달 시 밴.
+    strikes, banned = moderation.register_nsfw_strike(db, user)
+    assert strikes == NSFW_STRIKE_LIMIT
+    assert banned is True
+    assert user.is_banned is True
+    db.close()
+
+    # 밴된 사용자는 스캔 생성이 403으로 막힌다.
+    create_resp = client.post("/scans", json={"category": "upper"}, headers=headers)
+    assert create_resp.status_code == 403

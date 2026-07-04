@@ -6,6 +6,7 @@ import {
   api,
   ApiError,
   type AnalysisReport,
+  type Goal,
   type HistorySummary,
   type ProgressLog,
   type ScanSession,
@@ -45,6 +46,7 @@ export default function HistoryPage() {
   const [sessions, setSessions] = useState<ScanSession[]>([]);
   const [reportsBySession, setReportsBySession] = useState<Record<string, AnalysisReport>>({});
   const [logs, setLogs] = useState<ProgressLog[]>([]);
+  const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
   const [weight, setWeight] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +71,7 @@ export default function HistoryPage() {
       });
     });
     api.get<ProgressLog[]>("/progress").then(setLogs);
+    api.get<Goal | null>("/goals/active").then(setActiveGoal).catch(() => setActiveGoal(null));
     api.get<HistorySummary>("/history/dashboard-summary").then(setDashboard).catch(() => setDashboard(null));
   };
 
@@ -101,16 +104,29 @@ export default function HistoryPage() {
     <div className="space-y-10">
       <div
         className="card relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(168,85,247,0.15))" }}
+        style={{ borderColor: "var(--color-accent-cyan)", background: "rgba(0,184,255,0.08)" }}
       >
-        <p className="text-xs text-text-secondary mb-1">종합 대시보드</p>
+        <p className="label mb-2">Dashboard <span className="text-text-secondary normal-case">· 종합</span></p>
         <p className="text-base font-medium text-text-primary whitespace-pre-wrap">
           {dashboard ? dashboard.summary : "불러오는 중..."}
         </p>
       </div>
 
+      {/* 현재 목표 */}
+      <Link
+        href="/goals"
+        className="card block"
+        style={{ borderColor: "#FF6B35", background: "rgba(255,107,53,0.06)" }}
+      >
+        <p className="label mb-1" style={{ color: "#FF6B35" }}>Goal <span className="text-text-secondary normal-case">· 목표</span></p>
+        <p className="text-sm text-text-primary">
+          {activeGoal?.goal_text ? `🎯 ${activeGoal.goal_text}` : "아직 목표가 없어요 — 눌러서 설정하기 →"}
+        </p>
+      </Link>
+
       <div>
-        <h1 className="text-xl font-semibold mb-4 text-text-primary">분석 기록</h1>
+        <p className="label mb-1">History <span className="text-text-secondary normal-case">· 기록</span></p>
+        <h1 className="hero-headline-kr text-text-primary mb-4">분석 기록</h1>
         {sessions.length === 0 && <p className="text-sm text-text-secondary">아직 분석 기록이 없습니다.</p>}
         <ul className="space-y-2">
           {sessions.map((s) => {
@@ -119,7 +135,7 @@ export default function HistoryPage() {
               <li key={s.id} className="card flex justify-between items-center text-sm">
                 <div className="flex items-center gap-3">
                   {report?.headline_stats?.percentile != null && (
-                    <span className="badge-info text-xs px-2 py-1 rounded-md font-display shrink-0">
+                    <span className="badge-info text-xs px-2 py-1 rounded font-display shrink-0">
                       상위 {report.headline_stats.percentile}%
                     </span>
                   )}
@@ -140,7 +156,7 @@ export default function HistoryPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-4 text-text-primary">몸무게/메모 기록</h2>
+        <p className="label mb-4">Progress <span className="text-text-secondary normal-case">· 몸무게/메모</span></p>
         <WeightSparkline logs={logs} />
         <form onSubmit={addLog} className="flex flex-wrap gap-2 my-4">
           <input

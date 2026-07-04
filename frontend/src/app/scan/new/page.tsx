@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const CATEGORIES = [
-  { value: "full_body", symbol: "⬡", label: "전신", desc: "전체 밸런스 분석" },
-  { value: "upper", symbol: "△", label: "상체", desc: "어깨·가슴·팔·복근" },
-  { value: "lower", symbol: "▽", label: "하체", desc: "허벅지·종아리·힙" },
+  { value: "full_body", en: "FULL BODY", label: "전신", desc: "전체 밸런스 분석" },
+  { value: "upper", en: "UPPER BODY", label: "상체", desc: "어깨·가슴·팔·복근" },
+  { value: "lower", en: "LOWER BODY", label: "하체", desc: "허벅지·종아리·힙" },
 ];
 
 export default function ScanCategoryPage() {
@@ -15,7 +15,10 @@ export default function ScanCategoryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary">어디를 분석할까요?</h1>
+      <div>
+        <p className="label">Select Target <span className="text-text-secondary normal-case">· 부위 선택</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">어디를 분석할까요?</h1>
+      </div>
 
       <div className="space-y-3">
         {CATEGORIES.map((c) => {
@@ -24,19 +27,23 @@ export default function ScanCategoryPage() {
             <button
               key={c.value}
               onClick={() => setSelected(c.value)}
-              className="w-full flex items-center gap-4 rounded-2xl border px-4 py-4 min-h-11 text-left transition"
+              className="w-full flex items-center justify-between gap-4 rounded border px-5 py-4 min-h-11 text-left transition"
               style={{
                 borderColor: isSelected ? "var(--color-accent-cyan)" : "var(--color-border)",
-                background: isSelected ? "rgba(0,229,255,0.10)" : "var(--color-surface)",
+                background: isSelected ? "rgba(0,184,255,0.10)" : "var(--color-surface)",
+                boxShadow: isSelected ? "0 0 24px rgba(0,184,255,0.2)" : "none",
               }}
             >
-              <span className="text-2xl shrink-0" style={{ color: "var(--color-accent-cyan)" }}>
-                {c.symbol}
-              </span>
               <div>
-                <p className="font-medium text-text-primary">{c.label}</p>
-                <p className="text-xs text-text-secondary mt-0.5">{c.desc}</p>
+                <p
+                  className="label-big text-2xl"
+                  style={{ color: isSelected ? "var(--color-accent-cyan)" : "var(--color-text-primary)" }}
+                >
+                  {c.en}
+                </p>
+                <p className="text-xs text-text-secondary mt-0.5">{c.label} · {c.desc}</p>
               </div>
+              {isSelected && <span className="text-accent-cyan text-xl shrink-0">●</span>}
             </button>
           );
         })}

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.core.security import (
     create_access_token,
-    create_guardian_consent_token,
     create_oauth_pending_token,
     create_oauth_state_token,
     decode_oauth_pending_token,
@@ -93,19 +92,13 @@ def oauth_complete_signup(payload: OAuthCompleteSignupRequest):
             accept_terms=payload.accept_terms,
             accept_privacy=payload.accept_privacy,
             accept_marketing=payload.accept_marketing,
-            guardian_email=payload.guardian_email,
             oauth_provider=OAuthProvider(claims["provider"]),
             oauth_id=claims["external_id"],
         )
 
-        guardian_token = None
-        if user.is_minor and settings.environment == "development":
-            guardian_token = create_guardian_consent_token(user.id)
-
         return SignupResponse(
             access_token=create_access_token(user.id),
             is_minor=user.is_minor,
-            guardian_consent_dev_token=guardian_token,
         )
     finally:
         db.close()

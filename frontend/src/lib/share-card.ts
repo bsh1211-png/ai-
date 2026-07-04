@@ -13,61 +13,69 @@ export async function generateShareCardBlob(stats: HeadlineStats, dateLabel: str
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  ctx.fillStyle = "#0A0A0F";
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const glow = ctx.createRadialGradient(WIDTH / 2, 420, 80, WIDTH / 2, 420, 700);
-  glow.addColorStop(0, "rgba(0,229,255,0.18)");
-  glow.addColorStop(1, "rgba(10,10,15,0)");
+  const glow = ctx.createRadialGradient(WIDTH / 2, 520, 80, WIDTH / 2, 520, 760);
+  glow.addColorStop(0, "rgba(0,184,255,0.22)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  // 로고
   ctx.textAlign = "center";
-  ctx.fillStyle = "#8888A0";
-  ctx.font = "600 32px Outfit, sans-serif";
-  ctx.fillText("SWOLEMETER", WIDTH / 2, 140);
 
-  // 상위 %
-  ctx.font = "800 64px Outfit, sans-serif";
-  ctx.fillStyle = "#E8E8EC";
-  ctx.fillText("일반인 대비 상위", WIDTH / 2, 420);
+  // 로고
+  ctx.fillStyle = "#8A8A92";
+  ctx.font = "700 30px Outfit, sans-serif";
+  ctx.fillText("SWOLEMETER", WIDTH / 2, 150);
 
-  const percentileGradient = ctx.createLinearGradient(WIDTH / 2 - 200, 0, WIDTH / 2 + 200, 0);
-  percentileGradient.addColorStop(0, "#00E5FF");
-  percentileGradient.addColorStop(1, "#A855F7");
-  ctx.font = "900 180px Outfit, sans-serif";
-  ctx.fillStyle = percentileGradient;
-  ctx.fillText(`${stats.percentile ?? "-"}%`, WIDTH / 2, 600);
+  // 상위 % 라벨
+  ctx.font = "700 40px Pretendard, sans-serif";
+  ctx.fillStyle = "#8A8A92";
+  ctx.fillText("일반인 대비 상위", WIDTH / 2, 400);
+
+  // 거대 퍼센트 — 단색 시안 + 글로우
+  ctx.save();
+  ctx.shadowColor = "rgba(0,229,255,0.6)";
+  ctx.shadowBlur = 60;
+  ctx.font = "400 320px 'Bebas Neue', 'Archivo Black', sans-serif";
+  ctx.fillStyle = "#00B8FF";
+  ctx.fillText(`${stats.percentile ?? "-"}%`, WIDTH / 2, 720);
+  ctx.restore();
 
   if (stats.sync_rate !== null) {
-    ctx.font = "700 40px Outfit, sans-serif";
-    ctx.fillStyle = "#E8E8EC";
-    ctx.fillText("목표 싱크율", WIDTH / 2, 760);
-    ctx.font = "900 100px Outfit, sans-serif";
+    ctx.font = "700 36px Pretendard, sans-serif";
+    ctx.fillStyle = "#8A8A92";
+    ctx.fillText("목표 일치율", WIDTH / 2, 850);
+    ctx.font = "400 110px 'Bebas Neue', 'Archivo Black', sans-serif";
     ctx.fillStyle = "#FF6B35";
-    ctx.fillText(`${stats.sync_rate}%`, WIDTH / 2, 880);
+    ctx.fillText(`${stats.sync_rate}%`, WIDTH / 2, 960);
   }
 
-  const badgeY = 1050;
+  const badgeY = 1110;
   const badges: [string, string | number, string][] = [
     ["체지방", `${stats.body_fat_estimate_pct ?? "-"}%`, "#39FF14"],
-    ["대칭", stats.symmetry_score !== null ? `${stats.symmetry_score}` : "-", "#00E5FF"],
+    ["대칭", stats.symmetry_score !== null ? `${stats.symmetry_score}` : "-", "#00B8FF"],
   ];
   const spacing = WIDTH / 2;
   badges.forEach(([label, value, color], i) => {
     const x = spacing * i + spacing / 2;
-    ctx.font = "600 28px Pretendard, sans-serif";
-    ctx.fillStyle = "#8888A0";
+    ctx.font = "700 28px Pretendard, sans-serif";
+    ctx.fillStyle = "#8A8A92";
     ctx.fillText(label, x, badgeY);
-    ctx.font = "800 44px Outfit, sans-serif";
+    ctx.font = "400 64px 'Bebas Neue', 'Archivo Black', sans-serif";
     ctx.fillStyle = color;
-    ctx.fillText(String(value), x, badgeY + 60);
+    ctx.fillText(String(value), x, badgeY + 70);
   });
 
-  ctx.font = "500 28px Pretendard, sans-serif";
-  ctx.fillStyle = "#555570";
-  ctx.fillText(dateLabel, WIDTH / 2, 1250);
+  // 해시태그 풋터
+  ctx.font = "400 44px 'Bebas Neue', 'Archivo Black', sans-serif";
+  ctx.fillStyle = "#00B8FF";
+  ctx.fillText("#SWOLEMETER", WIDTH / 2, 1270);
+
+  ctx.font = "500 26px Pretendard, sans-serif";
+  ctx.fillStyle = "#4A4A52";
+  ctx.fillText(dateLabel, WIDTH / 2, 1320);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
 }

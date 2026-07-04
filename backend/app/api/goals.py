@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_active_user, get_current_user
 from app.db import get_db
 from app.models.scan import BodyGoal, GoalType
 from app.models.user import User
 from app.schemas.goal import GoalCreateRequest, GoalResponse
-from app.services import vision_service
+from app.services import moderation, vision_service
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/goals", tags=["goals"])
@@ -46,7 +46,7 @@ async def upload_reference_image(
     goal_id: uuid.UUID,
     consent: bool = Form(...),
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
 ) -> BodyGoal:
     goal = db.get(BodyGoal, goal_id)
@@ -59,21 +59,29 @@ async def upload_reference_image(
         )
 
     content = await file.read()
+
+    # 사진에 맞춰 목표 텍스트를 자동으로 조정. 노골적 성적 이미지면 저장하지 않고 거부 + 스트라이크.
+    described = None
+    try:
+        described = vision_service.describe_goal_image(db, content)
+    except vision_service.ExplicitContentDetected:
+        strikes, banned = moderation.register_nsfw_strike(db, current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN if banned else status.HTTP_400_BAD_REQUEST,
+            detail=moderation.nsfw_warning_message(strikes, banned),
+        )
+    except (vision_service.DailyQuotaExceeded, vision_service.StillAnalyzing):
+        pass
+
     suffix = "." + (file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "jpg")
     storage_path = storage_service.save_bytes(f"goal_images/{current_user.id}", content, suffix=suffix)
 
     goal.reference_image_path = storage_path
     goal.reference_image_consent = True
     goal.goal_type = GoalType.combined if goal.goal_text else GoalType.reference_image
-
-    # 사진에 맞춰 목표 텍스트를 자동으로 조정. 실패해도 사진 업로드 자체는 성공시킨다.
-    try:
-        described = vision_service.describe_goal_image(db, content)
-        if described:
-            goal.goal_text = described
-            goal.goal_type = GoalType.combined
-    except (vision_service.DailyQuotaExceeded, vision_service.StillAnalyzing):
-        pass
+    if described:
+        goal.goal_text = described
+        goal.goal_type = GoalType.combined
 
     db.commit()
     db.refresh(goal)

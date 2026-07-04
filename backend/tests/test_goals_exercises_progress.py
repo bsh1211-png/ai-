@@ -6,23 +6,14 @@ from app.services import vision_service
 FIXTURE_IMAGE = Path(__file__).parent / "fixtures" / "sample_body.jpg"
 
 
-def _signup(client, email="goaluser@example.com"):
-    resp = client.post(
-        "/auth/signup",
-        json={
-            "email": email,
-            "password": "testpassword123",
-            "birth_date": "1995-01-01",
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
-    )
+def _signup(signup, email="goaluser@example.com"):
+    resp = signup(email, "1995-01-01")
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_goal_set_and_get_active(client):
-    headers = _signup(client)
+def test_goal_set_and_get_active(client, signup):
+    headers = _signup(signup)
     resp = client.post("/goals", json={"goal_text": "역삼각형 몸"}, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["goal_text"] == "역삼각형 몸"
@@ -35,8 +26,8 @@ def test_goal_set_and_get_active(client):
     assert active.json()["id"] == resp.json()["id"]  # 같은 row를 갱신해야 함
 
 
-def test_goal_text_update_preserves_reference_image(client, monkeypatch):
-    headers = _signup(client, "goalpreserve@example.com")
+def test_goal_text_update_preserves_reference_image(client, monkeypatch, signup):
+    headers = _signup(signup, "goalpreserve@example.com")
     goal = client.post("/goals", json={"goal_text": "초기 목표"}, headers=headers).json()
 
     monkeypatch.setattr(vision_service, "describe_goal_image", lambda db, image_bytes: "")
@@ -55,8 +46,8 @@ def test_goal_text_update_preserves_reference_image(client, monkeypatch):
     assert updated["goal_type"] == "combined"
 
 
-def test_progress_log_create_and_list(client):
-    headers = _signup(client, "progressuser@example.com")
+def test_progress_log_create_and_list(client, signup):
+    headers = _signup(signup, "progressuser@example.com")
     resp = client.post(
         "/progress", json={"weight_kg": 72.5, "notes": "테스트 기록"}, headers=headers
     )
@@ -99,8 +90,8 @@ def test_list_exercises_filter_by_muscle(client):
     assert len(resp_all.json()) == 2
 
 
-def test_goal_reference_image_adjusts_goal_text(client, monkeypatch):
-    headers = _signup(client, "goalimage@example.com")
+def test_goal_reference_image_adjusts_goal_text(client, monkeypatch, signup):
+    headers = _signup(signup, "goalimage@example.com")
     goal = client.post("/goals", json={"goal_text": "원래 목표"}, headers=headers).json()
 
     monkeypatch.setattr(
@@ -121,8 +112,8 @@ def test_goal_reference_image_adjusts_goal_text(client, monkeypatch):
     assert updated["reference_image_consent"] is True
 
 
-def test_goal_reference_image_requires_consent(client):
-    headers = _signup(client, "goalnoconsent@example.com")
+def test_goal_reference_image_requires_consent(client, signup):
+    headers = _signup(signup, "goalnoconsent@example.com")
     goal = client.post("/goals", json={"goal_text": "목표"}, headers=headers).json()
 
     with open(FIXTURE_IMAGE, "rb") as f:
@@ -135,8 +126,8 @@ def test_goal_reference_image_requires_consent(client):
     assert resp.status_code == 400
 
 
-def test_progress_log_delete(client):
-    headers = _signup(client, "progressdelete@example.com")
+def test_progress_log_delete(client, signup):
+    headers = _signup(signup, "progressdelete@example.com")
     log = client.post("/progress", json={"weight_kg": 70.0}, headers=headers).json()
 
     delete_resp = client.delete(f"/progress/{log['id']}", headers=headers)
@@ -146,9 +137,9 @@ def test_progress_log_delete(client):
     assert list_resp.json() == []
 
 
-def test_progress_log_delete_blocks_other_users(client):
-    headers_a = _signup(client, "progressowner@example.com")
-    headers_b = _signup(client, "progressother@example.com")
+def test_progress_log_delete_blocks_other_users(client, signup):
+    headers_a = _signup(signup, "progressowner@example.com")
+    headers_b = _signup(signup, "progressother@example.com")
     log = client.post("/progress", json={"weight_kg": 70.0}, headers=headers_a).json()
 
     delete_resp = client.delete(f"/progress/{log['id']}", headers=headers_b)

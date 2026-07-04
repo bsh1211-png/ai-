@@ -217,11 +217,36 @@ function CaptureInner() {
       )}
 
       {(phase === "ready" || phase === "countdown") && (
-        <div className="absolute inset-x-0 top-6 text-center">
-          <span className="badge-info text-sm inline-block px-3 py-1 rounded-full font-display">
-            {ANGLE_LABEL[currentAngle] ?? currentAngle} 촬영 ({angleIndex + 1}/{angles.length})
-          </span>
-        </div>
+        <>
+          {/* 가이드 프레임 — 시안 글로우 코너 마커 */}
+          <div className="absolute inset-8 pointer-events-none">
+            {(["tl", "tr", "bl", "br"] as const).map((corner) => (
+              <span
+                key={corner}
+                className="absolute w-10 h-10"
+                style={{
+                  top: corner.startsWith("t") ? 0 : "auto",
+                  bottom: corner.startsWith("b") ? 0 : "auto",
+                  left: corner.endsWith("l") ? 0 : "auto",
+                  right: corner.endsWith("r") ? 0 : "auto",
+                  borderTop: corner.startsWith("t") ? "3px solid #00E5FF" : "none",
+                  borderBottom: corner.startsWith("b") ? "3px solid #00E5FF" : "none",
+                  borderLeft: corner.endsWith("l") ? "3px solid #00E5FF" : "none",
+                  borderRight: corner.endsWith("r") ? "3px solid #00E5FF" : "none",
+                  filter: "drop-shadow(0 0 8px rgba(0,229,255,0.8))",
+                }}
+              />
+            ))}
+          </div>
+          <div className="absolute inset-x-0 top-6 text-center">
+            <p className="label-big text-accent-cyan text-2xl cyan-glow">
+              CAPTURE {angleIndex + 1} OF {angles.length}
+            </p>
+            <p className="label mt-1" style={{ color: "#fff" }}>
+              {ANGLE_LABEL[currentAngle] ?? currentAngle} · 촬영 {angleIndex + 1}/{angles.length}
+            </p>
+          </div>
+        </>
       )}
 
       {phase === "countdown" && (
@@ -241,12 +266,9 @@ function CaptureInner() {
             onClick={startCountdown}
             aria-label="촬영 시작"
             className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition"
-            style={{ border: "4px solid #00E5FF" }}
+            style={{ border: "4px solid #00E5FF", boxShadow: "0 0 30px rgba(0,229,255,0.6)" }}
           >
-            <span
-              className="w-14 h-14 rounded-full"
-              style={{ background: "linear-gradient(135deg, #00E5FF, #A855F7)" }}
-            />
+            <span className="w-14 h-14 rounded-full" style={{ background: "#00B8FF" }} />
           </button>
         </div>
       )}

@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Up
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_active_user, get_current_user
 from app.db import get_db
 from app.models.scan import (
     AnalysisReport,
@@ -36,7 +36,7 @@ def _get_owned_session(db: Session, session_id: uuid.UUID, user: User) -> BodySc
 @router.post("", response_model=ScanSessionResponse, status_code=status.HTTP_201_CREATED)
 def create_scan_session(
     payload: ScanSessionCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
 ) -> BodyScanSession:
     try:
@@ -83,7 +83,7 @@ async def upload_scan_image(
     session_id: uuid.UUID,
     angle: str,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
 ) -> BodyScanSession:
     session = _get_owned_session(db, session_id, current_user)
@@ -133,7 +133,7 @@ def get_scan_image_file(
 def trigger_analysis(
     session_id: uuid.UUID,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
 ) -> dict:
     session = _get_owned_session(db, session_id, current_user)

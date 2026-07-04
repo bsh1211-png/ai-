@@ -5,17 +5,8 @@ from app.services import vision_service
 FIXTURE_IMAGE = Path(__file__).parent / "fixtures" / "sample_body.jpg"
 
 
-def _signup_and_consent(client, email="historyuser@example.com") -> dict:
-    resp = client.post(
-        "/auth/signup",
-        json={
-            "email": email,
-            "password": "testpassword123",
-            "birth_date": "1995-01-01",
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
-    )
+def _signup_and_consent(client, signup, email="historyuser@example.com") -> dict:
+    resp = signup(email, "1995-01-01")
     token = resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     client.post("/consents/body-image", json={"consented": True}, headers=headers)
@@ -49,8 +40,8 @@ def _complete_one_scan(client, headers, monkeypatch, category="upper"):
     client.post(f"/scans/{session['id']}/analyze", headers=headers)
 
 
-def test_dashboard_summary_insufficient_data(client, monkeypatch):
-    headers = _signup_and_consent(client)
+def test_dashboard_summary_insufficient_data(client, monkeypatch, signup):
+    headers = _signup_and_consent(client, signup)
     _complete_one_scan(client, headers, monkeypatch)
 
     resp = client.get("/history/dashboard-summary", headers=headers)
@@ -58,8 +49,8 @@ def test_dashboard_summary_insufficient_data(client, monkeypatch):
     assert resp.json()["has_enough_data"] is False
 
 
-def test_dashboard_summary_success_and_cache(client, monkeypatch):
-    headers = _signup_and_consent(client, "historyuser2@example.com")
+def test_dashboard_summary_success_and_cache(client, monkeypatch, signup):
+    headers = _signup_and_consent(client, signup, "historyuser2@example.com")
     _complete_one_scan(client, headers, monkeypatch, category="upper")
     _complete_one_scan(client, headers, monkeypatch, category="lower")
 
@@ -78,8 +69,8 @@ def test_dashboard_summary_success_and_cache(client, monkeypatch):
     assert second["summary"] == "종합 총평입니다"
 
 
-def test_dashboard_summary_rate_limited_is_not_cached(client, monkeypatch):
-    headers = _signup_and_consent(client, "historyuser3@example.com")
+def test_dashboard_summary_rate_limited_is_not_cached(client, monkeypatch, signup):
+    headers = _signup_and_consent(client, signup, "historyuser3@example.com")
     _complete_one_scan(client, headers, monkeypatch, category="upper")
     _complete_one_scan(client, headers, monkeypatch, category="lower")
 

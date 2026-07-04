@@ -10,9 +10,18 @@ def _state(provider="google"):
     return create_oauth_state_token(provider)
 
 
-def test_oauth_start_not_configured_returns_400(client):
+def test_oauth_start_not_configured_returns_400(client, monkeypatch):
+    monkeypatch.setitem(
+        oauth_providers.PROVIDER_CONFIG[OAuthProvider.google], "client_id", ""
+    )
     resp = client.get("/auth/oauth/google/start", follow_redirects=False)
     assert resp.status_code == 400
+
+
+def test_oauth_start_configured_redirects_to_google(client):
+    resp = client.get("/auth/oauth/google/start", follow_redirects=False)
+    assert resp.status_code in (302, 307)
+    assert "accounts.google.com" in resp.headers["location"]
 
 
 def test_oauth_callback_invalid_state_redirects_with_error(client):
@@ -91,37 +100,13 @@ def test_oauth_callback_existing_oauth_user_logs_in_directly(client, monkeypatch
     assert "token" in query
 
 
-def test_oauth_callback_links_existing_password_account(client, monkeypatch):
-    signup_resp = client.post(
-        "/auth/signup",
-        json={
-            "email": "linkme@example.com",
-            "password": "testpassword123",
-            "birth_date": "1990-01-01",
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
-    )
-    assert signup_resp.status_code == 201
-
-    monkeypatch.setattr(
-        oauth_providers,
-        "complete_oauth_login",
-        lambda provider, code: oauth_providers.OAuthUserInfo(
-            provider=provider, external_id="kakao-ext-1", email="linkme@example.com"
-        ),
-    )
-
+def test_oauth_non_google_provider_is_rejected(client):
+    """Google 전용 — 다른 provider는 콜백에서 에러 리다이렉트."""
     resp = client.get(
         "/auth/oauth/kakao/callback",
         params={"code": "abc", "state": _state("kakao")},
         follow_redirects=False,
     )
+    assert resp.status_code in (302, 307)
     query = parse_qs(urlparse(resp.headers["location"]).query)
-    assert "token" in query
-
-    db = client.TestingSessionLocal()
-    linked = db.query(User).filter(User.email == "linkme@example.com").first()
-    assert linked.oauth_provider == OAuthProvider.kakao
-    assert linked.oauth_id == "kakao-ext-1"
-    db.close()
+    assert "error" in query

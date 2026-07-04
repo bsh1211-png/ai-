@@ -5,9 +5,23 @@ from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app.models.scan import BodyGoal, BodyScanSession, PoseMetric, ScanStatus, VisionAnalysis
-from app.services import pose_service, vision_service
+from app.models.user import User
+from app.services import moderation, pose_service, vision_service
 from app.services.report_composer import compose_report
 from app.services.storage_service import storage_service
+
+
+def _handle_explicit_content(db: Session, session: BodyScanSession) -> None:
+    """노골적 성적 이미지 감지 시: 스트라이크 누적, 한도 도달 시 영구 정지."""
+    user = db.get(User, session.user_id)
+    if user is not None:
+        strikes, banned = moderation.register_nsfw_strike(db, user)
+    else:
+        strikes, banned = moderation.NSFW_STRIKE_LIMIT, True
+
+    session.status = ScanStatus.failed
+    session.error_message = moderation.nsfw_warning_message(strikes, banned)
+    db.commit()
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +116,9 @@ def run_analysis(session_id) -> None:
                 session.status = ScanStatus.failed
                 session.error_message = "오늘의 AI 분석 요청 한도를 초과했습니다. 내일 다시 시도해주세요."
                 db.commit()
+                return
+            except vision_service.ExplicitContentDetected:
+                _handle_explicit_content(db, session)
                 return
             except vision_service.StillAnalyzing:
                 logger.info("Gemini rate limited, retry %s/%s", attempt + 1, MAX_RETRIES)

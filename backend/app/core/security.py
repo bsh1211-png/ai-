@@ -31,22 +31,6 @@ def decode_access_token(token: str) -> uuid.UUID | None:
     return uuid.UUID(payload["sub"])
 
 
-def create_guardian_consent_token(user_id: uuid.UUID) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=7)
-    payload = {"sub": str(user_id), "exp": expire, "purpose": "guardian_consent"}
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-
-
-def decode_guardian_consent_token(token: str) -> uuid.UUID | None:
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-    except jwt.PyJWTError:
-        return None
-    if payload.get("purpose") != "guardian_consent":
-        return None
-    return uuid.UUID(payload["sub"])
-
-
 def create_oauth_state_token(provider: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=10)
     payload = {"provider": provider, "exp": expire, "purpose": "oauth_state"}

@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -41,8 +41,16 @@ class User(UUIDPKMixin, CreatedAtMixin, Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     data_retention_until: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+    # 노골적 성적 이미지 업로드 누적 횟수. NSFW_STRIKE_LIMIT 도달 시 banned_at 설정으로 영구 정지.
+    nsfw_strike_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     policy_consents: Mapped[list["PolicyConsent"]] = relationship(back_populates="user")
     body_image_consents: Mapped[list["BodyImageConsent"]] = relationship(back_populates="user")
+
+    @property
+    def is_banned(self) -> bool:
+        return self.banned_at is not None
 
 
 class PolicyType(str, enum.Enum):

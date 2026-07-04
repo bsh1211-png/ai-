@@ -11,7 +11,6 @@ class TokenResponse(BaseModel):
 
 class SignupResponse(TokenResponse):
     is_minor: bool
-    guardian_consent_dev_token: str | None = None
 
 
 class OAuthCompleteSignupRequest(BaseModel):
@@ -20,14 +19,13 @@ class OAuthCompleteSignupRequest(BaseModel):
     accept_terms: bool
     accept_privacy: bool
     accept_marketing: bool = False
-    guardian_email: EmailStr | None = None
 
 
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     is_minor: bool
-    guardian_consent_status: str
+    is_banned: bool
 
     class Config:
         from_attributes = True

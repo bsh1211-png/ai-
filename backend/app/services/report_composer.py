@@ -68,15 +68,30 @@ def compose_report(
     pose_summary: dict,
 ) -> AnalysisReport:
     weak_points = vision_result.get("weak_points", [])
-    grouped = match_exercises_grouped(db, weak_points)
+    # '줄이기(reduce)' 방향 부위는 근비대 운동을 추천하면 안 되므로 운동 매칭에서 제외한다
+    # (리포트 표시에는 그대로 남아 조언을 보여준다).
+    growable_points = [wp for wp in weak_points if wp.get("goal_action") != "reduce"]
+    grouped = match_exercises_grouped(db, growable_points)
     recommended_exercise_ids = [str(ex.id) for _, exercises in grouped for ex in exercises]
     recommended_routine = _build_routine(grouped)
 
     headline_stats = dict(vision_result.get("headline_stats") or {})
     headline_stats["symmetry_score"] = _average_symmetry_score(pose_summary)
 
+    goal_alignment = vision_result.get("goal_alignment") or {}
+    # 모델이 sync_rate를 goal_alignment에만 넣었을 수 있으니 headline_stats에도 반영한다.
+    if headline_stats.get("sync_rate") is None and goal_alignment.get("sync_rate") is not None:
+        headline_stats["sync_rate"] = goal_alignment.get("sync_rate")
+
+    direction = goal_alignment.get("direction")
+    has_reduce_point = any(wp.get("goal_action") == "reduce" for wp in weak_points)
     body_fat = headline_stats.get("body_fat_estimate_pct")
-    if body_fat is not None and body_fat >= CARDIO_BODY_FAT_THRESHOLD:
+    needs_cardio = (
+        (body_fat is not None and body_fat >= CARDIO_BODY_FAT_THRESHOLD)
+        or direction == "slim_down"
+        or has_reduce_point
+    )
+    if needs_cardio:
         cardio = _pick_cardio_exercise(db)
         if cardio is not None and str(cardio.id) not in recommended_exercise_ids:
             recommended_exercise_ids.append(str(cardio.id))
@@ -84,7 +99,7 @@ def compose_report(
                 {
                     "exercise_id": str(cardio.id),
                     "exercise_name": cardio.name_ko or cardio.name_en,
-                    "target_part": "체지방 감량",
+                    "target_part": "체지방 감량 · 유산소",
                     "sets": None,
                     "reps": None,
                     "duration_minutes": CARDIO_DURATION_MINUTES,
@@ -100,7 +115,13 @@ def compose_report(
     )
     goal_comparison = None
     if goal is not None:
-        goal_comparison = {"goal_type": goal.goal_type.value, "goal_text": goal.goal_text}
+        goal_comparison = {
+            "goal_type": goal.goal_type.value,
+            "goal_text": goal.goal_text,
+            "sync_rate": headline_stats.get("sync_rate"),
+            "direction": direction,
+            "feedback": goal_alignment.get("feedback"),
+        }
 
     report = AnalysisReport(
         session_id=session_id,

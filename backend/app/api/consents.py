@@ -5,14 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.constants import CURRENT_POLICY_VERSION
-from app.core.security import decode_guardian_consent_token
 from app.db import get_db
-from app.models.user import BodyImageConsent, BodyImageConsentType, GuardianConsentStatus, User
-from app.schemas.consent import (
-    BodyImageConsentRequest,
-    ConsentStatusResponse,
-    GuardianConsentConfirmRequest,
-)
+from app.models.user import BodyImageConsent, BodyImageConsentType, User
+from app.schemas.consent import BodyImageConsentRequest, ConsentStatusResponse
 from app.services.consent_gate import active_body_image_consent, upload_block_reason
 
 router = APIRouter(prefix="/consents", tags=["consents"])
@@ -60,27 +55,7 @@ def my_consent_status(
     reason = upload_block_reason(db, current_user)
     return ConsentStatusResponse(
         is_minor=current_user.is_minor,
-        guardian_consent_status=current_user.guardian_consent_status.value,
         body_image_consent_active=consent is not None,
         can_upload=reason is None,
         blocked_reason=reason,
     )
-
-
-@router.post("/guardian/confirm")
-def confirm_guardian_consent(
-    payload: GuardianConsentConfirmRequest,
-    db: Session = Depends(get_db),
-) -> dict:
-    user_id = decode_guardian_consent_token(payload.token)
-    if user_id is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="유효하지 않거나 만료된 토큰입니다")
-
-    user = db.get(User, user_id)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자를 찾을 수 없습니다")
-
-    user.guardian_consent_status = GuardianConsentStatus.approved
-    user.guardian_consent_at = datetime.now(timezone.utc)
-    db.commit()
-    return {"status": "approved"}
