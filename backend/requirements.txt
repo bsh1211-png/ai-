@@ -15,4 +15,5 @@ mediapipe>=0.10.30
 google-genai>=1.0
 requests>=2.32
 python-multipart>=0.0.12
+supabase>=2.0
 pytest>=8.3
