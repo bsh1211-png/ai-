@@ -1,0 +1,37 @@
+name: keep-alive (Render 무료 플랜 슬립 방지)
+
+# ────────────────────────────────────────────────────────────────
+# Render 무료 플랜은 15분간 아무도 안 쓰면 서버가 잠들어,
+# 그 뒤 첫 접속자가 로그인/분석 시 약 40초를 기다려야 합니다.
+# 이 워크플로가 10분마다 백엔드 /health 를 호출해 서버를 깨어있게 유지합니다.
+#
+# ⚠️ 유료 플랜(Render Starter 등)으로 전환하면 더 이상 필요 없습니다.
+#    아래 둘 중 하나로 해제하세요:
+#      1) 이 파일(.github/workflows/keep-alive.yml)을 삭제 후 커밋  ← 가장 확실
+#      2) GitHub 저장소 > Actions 탭 > 이 워크플로 선택 > "Disable workflow"
+# ────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 10분마다 (Render는 15분에 잠들므로 여유 있게)
+  workflow_dispatch:          # 필요 시 수동 실행 버튼
+
+# 여러 번 겹쳐 도는 것 방지
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 백엔드 깨우기 (/health 호출)
+        run: |
+          URL="https://swolemeter-api.onrender.com/health"
+          echo "Pinging $URL ..."
+          # 잠들어 있으면 콜드스타트로 최대 ~60초 걸릴 수 있으니 넉넉히 대기
+          code=$(curl -s -o /dev/null -w "%{http_code}" -m 90 "$URL")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::health check가 200이 아닙니다 (HTTP $code)"
+          fi
