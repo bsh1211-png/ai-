@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Downloading ML model if needed..."
+python -m scripts.download_pose_model
+
 echo "Running Alembic migrations..."
 alembic upgrade head
 

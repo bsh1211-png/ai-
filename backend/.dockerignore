@@ -1,0 +1,11 @@
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.env
+dev.db
+storage/
+app/ml_models/*.task
+*.egg-info
