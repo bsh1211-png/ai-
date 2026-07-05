@@ -65,13 +65,22 @@ class SupabaseStorageService:
 
 
 def _make_storage_service() -> LocalStorageService | SupabaseStorageService:
+    import logging
     from app.config import settings
-    if settings.supabase_url and settings.supabase_service_key:
-        return SupabaseStorageService(
-            settings.supabase_url,
-            settings.supabase_service_key,
-            settings.supabase_storage_bucket,
-        )
+
+    url = settings.supabase_url.strip()
+    key = settings.supabase_service_key.strip()
+
+    # URL 유효성 간단 검사 후 초기화 시도
+    if url.startswith("https://") and "supabase.co" in url and key:
+        try:
+            svc = SupabaseStorageService(url, key, settings.supabase_storage_bucket)
+            logging.info("Supabase Storage 사용")
+            return svc
+        except Exception as e:
+            logging.warning(f"Supabase Storage 초기화 실패, 로컬 저장소로 폴백: {e}")
+
+    logging.info("LocalStorageService 사용")
     return LocalStorageService()
 
 
