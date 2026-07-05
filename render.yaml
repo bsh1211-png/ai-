@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: swolemeter-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      # --- DB (Supabase Session Pooler URL) ---
+      - key: DATABASE_URL
+        sync: false
+
+      # --- AI ---
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_PRO_MODEL
+        value: gemini-2.5-pro
+      - key: GEMINI_FLASH_MODEL
+        value: gemini-2.5-flash
+
+      # --- JWT (Render가 자동 생성) ---
+      - key: JWT_SECRET
+        generateValue: true
+
+      # --- 도메인 (배포 후 실제 URL로 설정) ---
+      - key: BACKEND_BASE_URL
+        sync: false          # 예: https://swolemeter-api.onrender.com
+      - key: FRONTEND_BASE_URL
+        sync: false          # 예: https://swolemeter.vercel.app
+      - key: EXTRA_ALLOWED_ORIGINS
+        sync: false          # 예: https://swolemeter.vercel.app
+
+      # --- Google OAuth ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # --- Supabase Storage (이미지 저장) ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: swolemeter-media
+
+      # --- 선택 사항 ---
+      - key: YOUTUBE_API_KEY
+        value: ""
