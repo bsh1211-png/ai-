@@ -181,9 +181,9 @@ export default function ScanDetailPage() {
           </div>
 
           {/* 신체 총평 — 목표와 무관한 전체적·객관적 평가 (먼저 표시) */}
-          <div className="card">
-            <p className="section-label mb-2">Overall <span className="sub">· 신체 총평</span></p>
-            <p className="text-sm text-text-secondary whitespace-pre-wrap">{report.summary}</p>
+          <div className="card" style={{ borderColor: "var(--color-accent-cyan)", background: "rgba(0,184,255,0.06)" }}>
+            <p className="section-label mb-2" style={{ color: "var(--color-accent-cyan)" }}>Overall <span className="sub">· 신체 총평</span></p>
+            <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">{report.summary}</p>
           </div>
 
           {/* 목표 대비 분석 (목표가 설정된 경우, 총평 다음에 표시) */}
@@ -200,9 +200,9 @@ export default function ScanDetailPage() {
                 )}
               </div>
               {report.goal_comparison.goal_text && (
-                <p className="text-xs text-text-dim mb-2">🎯 목표: {report.goal_comparison.goal_text}</p>
+                <p className="text-xs text-text-secondary mb-2">🎯 목표: {report.goal_comparison.goal_text}</p>
               )}
-              <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
                 {report.goal_comparison.feedback}
               </p>
             </div>
@@ -234,7 +234,7 @@ export default function ScanDetailPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-text-secondary text-sm mt-1">{wp.comment}</p>
+                    <p className="text-text-primary text-sm mt-1">{wp.comment}</p>
                   </li>
                 );
               })}
@@ -253,6 +253,7 @@ export default function ScanDetailPage() {
                         src={exerciseImageUrl(ex.image_paths[0])}
                         alt={ex.name_en}
                         className="w-full h-32 object-cover rounded analysis-photo"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                       />
                     )}
                     <p className="text-sm font-medium text-text-primary">{ex.name_ko || ex.name_en}</p>
