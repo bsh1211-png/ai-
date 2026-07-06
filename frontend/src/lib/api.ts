@@ -178,6 +178,8 @@ export interface ProgressLog {
 }
 
 export function exerciseImageUrl(relativePath: string): string {
+  // 절대 URL(예: CDN/GitHub 호스팅 이미지)은 그대로 사용
+  if (/^https?:\/\//i.test(relativePath)) return relativePath;
   return `${API_URL}/media/${relativePath}`;
 }
 

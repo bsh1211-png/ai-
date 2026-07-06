@@ -1,6 +1,7 @@
 """yuhonas/free-exercise-db(CC0)의 운동 메타데이터를 exercises 테이블에 시딩.
 
-대표 이미지 1장만 로컬 storage로 미러링해 외부 GitHub 의존을 줄인다.
+대표 이미지 1장의 jsDelivr CDN URL을 그대로 저장한다(로컬/Supabase 저장 불필요,
+CDN에서 항상 로드되므로 배포 환경의 임시 디스크 문제에 영향받지 않는다).
 재실행해도 external_id 기준으로 중복 삽입하지 않는다.
 
 사용법: backend/ 에서 `python -m scripts.seed_free_exercise_db`
@@ -15,13 +16,13 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.db import SessionLocal  # noqa: E402
 from app.models.exercise import Exercise, ExerciseSource  # noqa: E402
-from app.services.storage_service import storage_service  # noqa: E402
 from app.services.youtube_service import search_exercise_videos  # noqa: E402
 
 EXERCISES_JSON_URL = (
     "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
 )
-IMAGE_BASE_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
+# jsDelivr CDN — GitHub raw보다 이미지 서빙에 안정적
+IMAGE_BASE_URL = "https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/"
 
 
 def fetch_exercises() -> list[dict]:
@@ -30,19 +31,11 @@ def fetch_exercises() -> list[dict]:
     return response.json()
 
 
-def mirror_first_image(exercise: dict) -> list[str]:
+def first_image_url(exercise: dict) -> list[str]:
     images = exercise.get("images") or []
     if not images:
         return []
-    url = IMAGE_BASE_URL + images[0]
-    try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-    except requests.RequestException:
-        return []
-    suffix = Path(images[0]).suffix or ".jpg"
-    path = storage_service.save_bytes("exercise_images", response.content, suffix=suffix)
-    return [path]
+    return [IMAGE_BASE_URL + images[0]]
 
 
 def seed(limit: int | None = None) -> int:
@@ -59,7 +52,7 @@ def seed(limit: int | None = None) -> int:
             if not external_id or external_id in existing_ids:
                 continue
 
-            image_paths = mirror_first_image(raw)
+            image_paths = first_image_url(raw)
             exercise = Exercise(
                 external_id=external_id,
                 name_en=raw.get("name", ""),

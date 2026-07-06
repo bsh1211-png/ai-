@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api, exerciseImageUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
+import { api, exerciseImageUrl, fetchAuthedBlobUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
 import { muscleLabel } from "@/lib/muscle-labels";
 import { generateShareCardBlob, shareOrDownloadCard } from "@/lib/share-card";
 
@@ -29,6 +29,70 @@ const GOAL_ACTION_BADGE: Record<string, { label: string; cls: string }> = {
   maintain: { label: "유지", cls: "badge-success" },
 };
 
+const ANGLE_LABEL: Record<string, string> = {
+  front: "정면",
+  back: "후면",
+  side: "측면",
+  left: "좌측면",
+  right: "우측면",
+  side_left: "좌측면",
+  side_right: "우측면",
+};
+
+// 촬영한 사진 슬라이더 — 여러 각도면 좌우로 넘겨서 보기
+function PhotoCarousel({ photos }: { photos: { angle: string; url: string }[] }) {
+  const [active, setActive] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setActive(Math.round(el.scrollLeft / el.clientWidth));
+  };
+
+  if (photos.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {photos.map((p, i) => (
+          <div key={i} className="relative shrink-0 w-full snap-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.url}
+              alt={p.angle}
+              className="w-full max-h-[60vh] object-contain bg-black rounded-2xl"
+            />
+            {p.angle && (
+              <span className="absolute top-3 left-3 text-xs px-2.5 py-1 rounded-md bg-black/60 text-white tracking-wide backdrop-blur-sm">
+                {ANGLE_LABEL[p.angle] ?? p.angle}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      {photos.length > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {photos.map((_, i) => (
+            <span
+              key={i}
+              className="h-1.5 rounded-full transition-all duration-200"
+              style={{
+                width: i === active ? 20 : 6,
+                background: i === active ? "var(--color-accent-cyan)" : "var(--color-text-dim)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 영어 라벨(크게) + 한국어(작게) 형식
 function BiLabel({ en, ko, color, className = "" }: { en: string; ko: string; color?: string; className?: string }) {
   return (
@@ -44,7 +108,10 @@ export default function ScanDetailPage() {
   const [session, setSession] = useState<ScanSession | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [photos, setPhotos] = useState<{ angle: string; url: string }[]>([]);
   const [sharing, setSharing] = useState(false);
+
+  const imageCount = session?.images.length ?? 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +150,37 @@ export default function ScanDetailPage() {
     ).then(setExercises);
   }, [report]);
 
+  // 촬영한 사진을 인증 토큰으로 불러와 blob URL로 표시 (여러 각도면 슬라이더)
+  useEffect(() => {
+    if (!session || session.images.length === 0) return;
+    let cancelled = false;
+    const created: string[] = [];
+    (async () => {
+      const loaded = await Promise.all(
+        session.images.map(async (img) => {
+          try {
+            const url = await fetchAuthedBlobUrl(`/scans/${session.id}/images/${img.id}/file`);
+            created.push(url);
+            return { angle: img.angle, url };
+          } catch {
+            return null;
+          }
+        })
+      );
+      const valid = loaded.filter((x): x is { angle: string; url: string } => x !== null);
+      if (cancelled) {
+        created.forEach((u) => URL.revokeObjectURL(u));
+        return;
+      }
+      setPhotos(valid);
+    })();
+    return () => {
+      cancelled = true;
+      created.forEach((u) => URL.revokeObjectURL(u));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, imageCount]);
+
   const handleShare = async () => {
     if (!report?.headline_stats || !session) return;
     setSharing(true);
@@ -108,6 +206,9 @@ export default function ScanDetailPage() {
         <h1 className="hero-headline-kr text-text-primary mt-1">분석 결과</h1>
         <p className="text-sm text-text-secondary mt-2">{STATUS_LABEL[session.status] ?? session.status}</p>
       </div>
+
+      {/* 촬영한 사진 — 상위 % 위에 크게, 여러 각도면 슬라이드로 넘겨보기 */}
+      {photos.length > 0 && <PhotoCarousel photos={photos} />}
 
       {session.status === "processing" && (
         <p className="text-sm text-text-secondary">
