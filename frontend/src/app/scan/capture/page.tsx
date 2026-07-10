@@ -25,15 +25,25 @@ function CaptureInner() {
   const [countdown, setCountdown] = useState(5);
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 전면(user) / 후면(environment) 카메라 전환. 전신 촬영은 후면 카메라 화질이 좋다.
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const currentAngle = angles[angleIndex];
 
+  // facingMode가 바뀌면 기존 스트림을 끊고 해당 카메라로 다시 연결한다.
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
+    setPhase("loading_camera");
+    // 이전 스트림 정리
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user" }, audio: false })
+      .getUserMedia({
+        video: { facingMode, width: { ideal: 1280 }, height: { ideal: 1280 } },
+        audio: false,
+      })
       .then((stream) => {
-        if (!mounted) {
+        if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -42,33 +52,45 @@ function CaptureInner() {
         setPhase("ready");
       })
       .catch(() => {
+        if (cancelled) return;
         setErrorMessage("카메라에 접근할 수 없습니다. 브라우저의 카메라 권한을 허용해주세요.");
         setPhase("error");
       });
 
     return () => {
-      mounted = false;
+      cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [facingMode]);
 
+  // 모바일 카메라 원본은 매우 커서(업로드 지연·서버 메모리 부담·분석 오류의 원인)
+  // 긴 변 기준 1280px로 축소해 인코딩한다. 자세 인식/AI 분석에는 충분한 해상도.
+  const MAX_DIM = 1280;
   const captureFrame = (): Promise<{ blob: Blob; dataUrl: string } | null> => {
     return new Promise((resolve) => {
       const video = videoRef.current;
       if (!video || video.videoWidth === 0) return resolve(null);
+      let w = video.videoWidth;
+      let h = video.videoHeight;
+      const longest = Math.max(w, h);
+      if (longest > MAX_DIM) {
+        const scale = MAX_DIM / longest;
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext("2d");
       if (!ctx) return resolve(null);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, w, h);
       canvas.toBlob(
         (blob) => {
           if (!blob) return resolve(null);
-          resolve({ blob, dataUrl: canvas.toDataURL("image/jpeg", 0.9) });
+          resolve({ blob, dataUrl: canvas.toDataURL("image/jpeg", 0.85) });
         },
         "image/jpeg",
-        0.9
+        0.85
       );
     });
   };
@@ -247,6 +269,22 @@ function CaptureInner() {
             </p>
           </div>
         </>
+      )}
+
+      {phase === "ready" && (
+        <button
+          onClick={() => setFacingMode((m) => (m === "user" ? "environment" : "user"))}
+          aria-label="전면/후면 카메라 전환"
+          className="absolute top-6 right-5 rounded-full px-4 py-2 text-sm font-medium flex items-center gap-2 active:scale-95 transition"
+          style={{
+            background: "rgba(0,0,0,0.55)",
+            color: "#fff",
+            border: "1px solid rgba(0,229,255,0.5)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          🔄 {facingMode === "user" ? "후면으로" : "전면으로"}
+        </button>
       )}
 
       {phase === "countdown" && (
