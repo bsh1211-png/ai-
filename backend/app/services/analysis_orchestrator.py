@@ -100,6 +100,10 @@ def run_analysis(session_id) -> None:
             goal_image_bytes = storage_service.read_bytes(goal.reference_image_path)
         image_bytes = storage_service.read_bytes(primary_image.storage_path)
 
+        # 미성년자는 채점은 동일하게 깐깐하되 코멘트 톤을 건설적으로 (인신공격성 독설 방지)
+        analysis_user = db.get(User, session.user_id)
+        is_minor = bool(analysis_user and analysis_user.is_minor)
+
         vision_result = None
         for attempt in range(MAX_RETRIES):
             try:
@@ -110,6 +114,7 @@ def run_analysis(session_id) -> None:
                     goal_text,
                     goal_image_bytes,
                     category=session.category.value,
+                    is_minor=is_minor,
                 )
                 break
             except vision_service.DailyQuotaExceeded:

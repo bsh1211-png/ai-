@@ -14,7 +14,7 @@ def _signup_and_consent(client, signup, email="historyuser@example.com") -> dict
 
 
 def _complete_one_scan(client, headers, monkeypatch, category="upper"):
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
         return {
             "body_part_assessment": {"lats": "코멘트"},
             "weak_points": [{"part": "lats", "severity": "low", "comment": "코멘트"}],

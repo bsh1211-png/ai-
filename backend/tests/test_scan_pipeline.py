@@ -36,7 +36,7 @@ def test_full_scan_pipeline_success(client, monkeypatch, signup):
     exercise_id = str(exercise.id)
     db.close()
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
         return {
             "body_part_assessment": {"lats": "성장 여지가 있습니다"},
             "weak_points": [{"part": "lats", "severity": "medium", "comment": "등 근육 발달에 집중해보세요"}],
@@ -84,7 +84,7 @@ def test_scan_pipeline_daily_quota_exceeded(client, monkeypatch, signup):
     token = _signup_and_consent(client, signup)
     headers = {"Authorization": f"Bearer {token}"}
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
         raise vision_service.DailyQuotaExceeded()
 
     monkeypatch.setattr(vision_service, "analyze_body_image", fake_analyze)
@@ -183,7 +183,7 @@ def test_goal_alignment_reduce_skips_hypertrophy_and_stores_feedback(client, mon
     # 슬림 목표 설정
     client.post("/goals", json={"goal_text": "슬림하고 탄탄한 몸"}, headers=headers)
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
         return {
             "body_part_assessment": {"chest": "목표 대비 과함"},
             "weak_points": [
@@ -229,7 +229,7 @@ def test_scan_explicit_content_warns_and_strikes(client, monkeypatch, signup):
     token = _signup_and_consent(client, signup, email="explicit@example.com")
     headers = {"Authorization": f"Bearer {token}"}
 
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
         raise vision_service.ExplicitContentDetected()
 
     monkeypatch.setattr(vision_service, "analyze_body_image", fake_analyze)
