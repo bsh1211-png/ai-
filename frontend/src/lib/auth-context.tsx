@@ -21,6 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.get<User>("/auth/me");
       setUser(me);
+      // 초대 링크로 진입 후 로그인한 경우, 대기 중인 친구 초대를 자동 수락
+      const pending = typeof window !== "undefined" ? window.localStorage.getItem("pending_invite") : null;
+      if (pending) {
+        window.localStorage.removeItem("pending_invite");
+        api.post("/friends/accept", { code: pending }).catch(() => {});
+      }
     } catch {
       setUser(null);
     } finally {

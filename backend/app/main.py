@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, consents, exercises, goals, history, oauth, progress, scans
+from app.api import auth, consents, exercises, friends, goals, history, oauth, progress, scans
 from app.config import settings
 
 app = FastAPI(title=settings.app_name)
@@ -35,6 +35,7 @@ app.include_router(goals.router)
 app.include_router(exercises.router)
 app.include_router(progress.router)
 app.include_router(history.router)
+app.include_router(friends.router)
 
 
 @app.get("/health")

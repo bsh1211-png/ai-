@@ -10,12 +10,13 @@ from app.models.scan import (
     PoseMetric,
     VisionAnalysis,
 )
-from app.models.user import BodyImageConsent, PolicyConsent, User
+from app.models.user import BodyImageConsent, Friendship, PolicyConsent, User
 
 __all__ = [
     "User",
     "PolicyConsent",
     "BodyImageConsent",
+    "Friendship",
     "BodyScanSession",
     "BodyScanImage",
     "PoseMetric",

@@ -45,6 +45,10 @@ class User(UUIDPKMixin, CreatedAtMixin, Base):
     nsfw_strike_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # 친구 대결/랭킹용: 리더보드에 표시할 닉네임(이메일 비공개), 친구 초대 코드
+    display_name: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    invite_code: Mapped[str | None] = mapped_column(String(16), unique=True, index=True, nullable=True)
+
     policy_consents: Mapped[list["PolicyConsent"]] = relationship(back_populates="user")
     body_image_consents: Mapped[list["BodyImageConsent"]] = relationship(back_populates="user")
 
@@ -89,3 +93,13 @@ class BodyImageConsent(UUIDPKMixin, Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="body_image_consents")
+
+
+class Friendship(UUIDPKMixin, CreatedAtMixin, Base):
+    """친구 관계. 초대 수락 시 (A→B), (B→A) 두 방향 레코드를 모두 생성해 조회를 단순화한다."""
+
+    __tablename__ = "friendships"
+    __table_args__ = (UniqueConstraint("user_id", "friend_id", name="uq_friendship_pair"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    friend_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)

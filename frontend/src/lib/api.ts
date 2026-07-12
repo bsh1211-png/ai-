@@ -177,6 +177,22 @@ export interface ProgressLog {
   logged_at: string;
 }
 
+export interface RankingProfile {
+  invite_code: string;
+  display_name: string | null;
+  score: number | null;
+  percentile: number | null;
+}
+
+export interface LeaderboardEntry {
+  user_id: string;
+  display_name: string;
+  is_me: boolean;
+  score: number | null;
+  percentile: number | null;
+  rank: number | null;
+}
+
 export function exerciseImageUrl(relativePath: string): string {
   // 절대 URL(예: CDN/GitHub 호스팅 이미지)은 그대로 사용
   if (/^https?:\/\//i.test(relativePath)) return relativePath;
