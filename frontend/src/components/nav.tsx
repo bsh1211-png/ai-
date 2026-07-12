@@ -29,15 +29,20 @@ export function Nav() {
         <div className="flex-1" />
 
         {user ? (
-          <button
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
-            className="text-text-dim hover:text-text-secondary text-xs"
-          >
-            로그아웃
-          </button>
+          <>
+            <Link href="/settings" className="text-text-dim hover:text-text-secondary text-xs">
+              설정
+            </Link>
+            <button
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
+              className="text-text-dim hover:text-text-secondary text-xs"
+            >
+              로그아웃
+            </button>
+          </>
         ) : (
           <Link href="/login" className="text-text-secondary hover:text-text-primary text-sm">
             로그인

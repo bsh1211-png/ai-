@@ -9,6 +9,7 @@ from app.db import get_db
 from app.models.user import BodyImageConsent, BodyImageConsentType, User
 from app.schemas.consent import BodyImageConsentRequest, ConsentStatusResponse
 from app.services.consent_gate import active_body_image_consent, upload_block_reason
+from app.services.user_data_service import delete_all_user_media
 
 router = APIRouter(prefix="/consents", tags=["consents"])
 
@@ -22,13 +23,22 @@ def consent_body_image(
     if not payload.consented:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="동의가 필요합니다")
 
-    consent = BodyImageConsent(
-        user_id=current_user.id,
-        consent_type=BodyImageConsentType.camera_and_body_image,
-        consented_at=datetime.now(timezone.utc),
-        policy_version=CURRENT_POLICY_VERSION,
-    )
-    db.add(consent)
+    # 촬영/신체사진 사용 + AI 분석 + 히스토리 저장·보관을 하나의 동의로 받되,
+    # 감사 추적을 위해 각 항목을 개별 레코드로 남긴다.
+    now = datetime.now(timezone.utc)
+    for consent_type in (
+        BodyImageConsentType.camera_and_body_image,
+        BodyImageConsentType.analysis,
+        BodyImageConsentType.storage,
+    ):
+        db.add(
+            BodyImageConsent(
+                user_id=current_user.id,
+                consent_type=consent_type,
+                consented_at=now,
+                policy_version=CURRENT_POLICY_VERSION,
+            )
+        )
     db.commit()
     return {"status": "consented"}
 
@@ -41,9 +51,18 @@ def revoke_body_image_consent(
     consent = active_body_image_consent(db, current_user)
     if consent is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="활성화된 동의가 없습니다")
-    consent.revoked_at = datetime.now(timezone.utc)
+
+    # 활성 동의 전체를 철회 처리
+    now = datetime.now(timezone.utc)
+    db.query(BodyImageConsent).filter(
+        BodyImageConsent.user_id == current_user.id,
+        BodyImageConsent.revoked_at.is_(None),
+    ).update({"revoked_at": now}, synchronize_session=False)
     db.commit()
-    return {"status": "revoked"}
+
+    # 약속대로: 철회 즉시 저장한 신체 사진·분석 데이터를 완전 삭제
+    deleted_photos = delete_all_user_media(db, current_user.id)
+    return {"status": "revoked", "deleted_photos": deleted_photos}
 
 
 @router.get("/me", response_model=ConsentStatusResponse)
