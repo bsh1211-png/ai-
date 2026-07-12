@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { api, API_URL, type AnalysisReport, type ScanSession } from "@/lib/api";
+import { api, type AnalysisReport, type ScanSession } from "@/lib/api";
 import { CATEGORY_KO } from "@/lib/muscle-labels";
+import { LoginScreen } from "@/components/login-screen";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -66,29 +67,9 @@ export default function Home() {
 
   if (loading) return null;
 
+  // 로그아웃 상태로 링크 진입 시 처음부터 로그인 화면을 바로 노출
   if (!user) {
-    return (
-      <div className="pt-2 sm:pt-8">
-        <p className="label mb-4">AI Physique Analysis · AI 체형 분석</p>
-        <h1 className="hero-headline text-text-primary">
-          FIND YOUR<br />
-          <span className="text-accent-cyan cyan-glow">PHYSIQUE</span>
-        </h1>
-        <p className="text-text-secondary text-sm mt-5 mb-8">
-          AI가 당신의 체형을 분석하고, 부족한 부위에 맞는 운동과 루틴을 추천합니다.
-        </p>
-        <a
-          href={`${API_URL}/auth/oauth/google/start`}
-          className="btn-primary text-center block cyan-glow-strong"
-        >
-          Start Analysis · 분석 시작
-        </a>
-        <p className="label text-center mt-4 normal-case" style={{ textTransform: "none", letterSpacing: 0 }}>
-          Google 계정으로 간편하게 시작할 수 있어요
-        </p>
-        <p className="hashtag text-center mt-10 text-lg">#SWOLEMETER</p>
-      </div>
-    );
+    return <LoginScreen />;
   }
 
   if (user.is_banned) {
