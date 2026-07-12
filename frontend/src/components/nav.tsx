@@ -30,9 +30,11 @@ export function Nav() {
 
         {user ? (
           <>
-            <Link href="/ranking" className="text-text-secondary hover:text-text-primary text-xs">
-              랭킹
-            </Link>
+            {!user.is_minor && (
+              <Link href="/ranking" className="text-text-secondary hover:text-text-primary text-xs">
+                랭킹
+              </Link>
+            )}
             <Link href="/settings" className="text-text-dim hover:text-text-secondary text-xs">
               설정
             </Link>

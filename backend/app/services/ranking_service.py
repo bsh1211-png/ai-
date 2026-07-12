@@ -88,13 +88,20 @@ def connect_by_code(db: Session, current_user: User, code: str) -> User:
 
 
 def leaderboard(db: Session, current_user: User) -> list[dict]:
-    """나 + 친구들의 점수를 높은 순으로 정렬한 리더보드."""
+    """나 + 친구들의 점수를 높은 순으로 정렬한 리더보드.
+
+    미성년자 보호: 미성년 이용자는 신체 점수 경쟁에 참여하지 않는다.
+    (본인은 빈 리더보드, 미성년 친구의 점수도 남의 리더보드에 노출하지 않는다.)
+    """
+    if current_user.is_minor:
+        return []
+
     friend_ids = [
         row.friend_id
         for row in db.query(Friendship.friend_id).filter(Friendship.user_id == current_user.id).all()
     ]
     user_ids = [current_user.id, *friend_ids]
-    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    users = db.query(User).filter(User.id.in_(user_ids), User.is_minor.is_(False)).all()
 
     entries = []
     for u in users:

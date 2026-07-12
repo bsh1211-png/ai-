@@ -84,6 +84,26 @@ def test_no_score_user_ranked_last_without_rank(client, signup):
     assert board[1]["score"] is None and board[1]["rank"] is None
 
 
+def test_minor_excluded_from_ranking(client, signup):
+    """미성년자 보호: 미성년 이용자는 신체 점수 랭킹에 노출/참여되지 않는다."""
+    ta = signup("adult2@example.com", external_id="ad2").json()["access_token"]
+    tm = signup("teen2@example.com", "2012-01-01", external_id="tn2").json()["access_token"]
+
+    code = client.get("/friends/me", headers=_headers(ta)).json()["invite_code"]
+    client.post("/friends/accept", json={"code": code}, headers=_headers(tm))
+
+    _give_score(client, "adult2@example.com", 20)
+    _give_score(client, "teen2@example.com", 5)  # 높은 점수여도 노출되면 안 됨
+
+    # 성인 리더보드엔 미성년 친구가 없다 (본인만)
+    board_a = client.get("/friends/leaderboard", headers=_headers(ta)).json()["entries"]
+    assert len(board_a) == 1 and board_a[0]["is_me"] is True
+
+    # 미성년자 본인은 빈 리더보드
+    board_m = client.get("/friends/leaderboard", headers=_headers(tm)).json()["entries"]
+    assert board_m == []
+
+
 def test_accept_own_code_and_invalid_code(client, signup):
     ta = signup("self@example.com", external_id="self").json()["access_token"]
     code = client.get("/friends/me", headers=_headers(ta)).json()["invite_code"]

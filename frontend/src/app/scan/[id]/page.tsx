@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, exerciseImageUrl, fetchAuthedBlobUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
 import { muscleLabel } from "@/lib/muscle-labels";
 import { generateShareCardBlob, shareOrDownloadCard } from "@/lib/share-card";
+import { useAuth } from "@/lib/auth-context";
 
 const STATUS_LABEL: Record<string, string> = {
   uploaded: "업로드됨 (분석 대기)",
@@ -105,6 +106,7 @@ function BiLabel({ en, ko, color, className = "" }: { en: string; ko: string; co
 
 export default function ScanDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [session, setSession] = useState<ScanSession | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -206,6 +208,16 @@ export default function ScanDetailPage() {
         <h1 className="hero-headline-kr text-text-primary mt-1">분석 결과</h1>
         <p className="text-sm text-text-secondary mt-2">{STATUS_LABEL[session.status] ?? session.status}</p>
       </div>
+
+      {/* 미성년자 보호 안내 */}
+      {user?.is_minor && (
+        <div className="card" style={{ borderColor: "var(--color-accent-cyan)" }}>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            💙 성장기에는 체형이 계속 변합니다. 이 수치는 재미와 동기부여를 위한 추정치일 뿐이니
+            일희일비하지 말고, 건강하게 꾸준히 운동하는 것에 집중해요.
+          </p>
+        </div>
+      )}
 
       {/* 촬영한 사진 — 상위 % 위에 크게, 여러 각도면 슬라이드로 넘겨보기 */}
       {photos.length > 0 && <PhotoCarousel photos={photos} />}

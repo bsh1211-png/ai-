@@ -89,6 +89,27 @@ export default function RankingPage() {
     );
   }
 
+  // 미성년자 보호: 신체 점수 경쟁(랭킹)에서 제외
+  if (user.is_minor) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="label">Ranking</p>
+          <h1 className="hero-headline-kr text-text-primary mt-1">친구 대결</h1>
+        </div>
+        <div className="card space-y-2" style={{ borderColor: "var(--color-accent-cyan)" }}>
+          <p className="text-sm text-text-primary">미성년 회원은 신체 점수 경쟁(랭킹) 기능이 제한됩니다.</p>
+          <p className="text-xs text-text-dim leading-relaxed">
+            성장기에는 체형이 계속 변합니다. 남과 점수를 비교하기보다 나의 변화 기록에 집중해요. 💪
+          </p>
+        </div>
+        <Link href="/history" className="btn-secondary block text-center">
+          내 기록 보기
+        </Link>
+      </div>
+    );
+  }
+
   const needsNickname = profile !== null && !profile.display_name;
 
   return (
