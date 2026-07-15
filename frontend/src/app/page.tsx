@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api, type AnalysisReport, type ScanSession } from "@/lib/api";
 import { CATEGORY_KO } from "@/lib/muscle-labels";
 import { LoginScreen } from "@/components/login-screen";
+import { LoadingScreen } from "@/components/loading-screen";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -65,7 +66,8 @@ function RecentAnalysisCard() {
 export default function Home() {
   const { user, loading } = useAuth();
 
-  if (loading) return null;
+  // 로그인 확인 대기(재방문 로그인 유저의 백엔드 콜드스타트 등) 동안 로딩 표시
+  if (loading) return <LoadingScreen label="로그인 정보를 확인하는 중..." />;
 
   // 로그아웃 상태로 링크 진입 시 처음부터 로그인 화면을 바로 노출
   if (!user) {

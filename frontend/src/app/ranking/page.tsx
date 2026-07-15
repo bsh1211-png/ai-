@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError, type LeaderboardEntry, type RankingProfile } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { LoadingScreen } from "@/components/loading-screen";
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 export default function RankingPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [profile, setProfile] = useState<RankingProfile | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [nickname, setNickname] = useState("");
@@ -77,6 +78,8 @@ export default function RankingPage() {
       setSavingNick(false);
     }
   };
+
+  if (loading) return <LoadingScreen />;
 
   if (!user) {
     return (

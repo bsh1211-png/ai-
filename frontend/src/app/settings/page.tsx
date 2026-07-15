@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError, type ConsentStatus, type User } from "@/lib/api";
+import { api, ApiError, type ConsentStatus } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { LoadingScreen } from "@/components/loading-screen";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, logout, refresh } = useAuth();
+  const { user, loading, logout, refresh } = useAuth();
   const [consent, setConsent] = useState<ConsentStatus | null>(null);
   const [busy, setBusy] = useState<null | "revoke" | "delete">(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -59,6 +60,8 @@ export default function SettingsPage() {
       setBusy(null);
     }
   };
+
+  if (loading) return <LoadingScreen />;
 
   if (!user) {
     return (
