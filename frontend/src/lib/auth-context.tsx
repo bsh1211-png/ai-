@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, setToken, type User } from "./api";
+import { api, getToken, setToken, type User } from "./api";
 
 interface AuthState {
   user: User | null;
@@ -18,6 +18,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
+    // 토큰이 없으면(=미로그인) 백엔드를 호출하지 않고 즉시 로그아웃 상태로 처리.
+    // 그래야 첫 방문자가 백엔드 콜드스타트(~40초)를 기다리며 빈 화면을 보지 않고
+    // 곧바로 로그인 화면을 볼 수 있다.
+    if (!getToken()) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     try {
       const me = await api.get<User>("/auth/me");
       setUser(me);
