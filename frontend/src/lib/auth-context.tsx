@@ -36,6 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         api.post("/friends/accept", { code: pending }).catch(() => {});
       }
     } catch {
+      // 토큰이 만료·무효면 정리해 다음 방문부터 백엔드 확인 없이 바로 로그인 화면이 뜨게 한다.
+      setToken(null);
       setUser(null);
     } finally {
       setLoading(false);
