@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
 
 // 로그아웃 상태에서 처음 진입 시 보여주는 로그인 화면. 홈(/)과 /login에서 공용으로 사용.
@@ -15,7 +16,16 @@ export function LoginScreen() {
         </p>
       </div>
       <SocialLoginButtons />
+      <p className="text-center text-sm">
+        <Link href="/about" className="text-text-secondary underline hover:text-text-primary">
+          Swolemeter는 어떤 서비스인가요?
+        </Link>
+      </p>
       <p className="hashtag text-center text-lg">#SWOLEMETER</p>
+      <div className="flex justify-center gap-4 text-xs text-text-dim pt-2">
+        <Link href="/about" className="hover:text-text-secondary">서비스 소개</Link>
+        <Link href="/privacy" className="hover:text-text-secondary">개인정보처리방침</Link>
+      </div>
     </div>
   );
 }

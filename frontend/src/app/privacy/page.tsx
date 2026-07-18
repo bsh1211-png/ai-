@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
       <div>
         <p className="label">Privacy Policy</p>
         <h1 className="hero-headline-kr text-text-primary mt-1">개인정보처리방침</h1>
-        <p className="text-xs text-text-dim mt-2">최종 개정일: 2026-07-12 · 버전 v1</p>
+        <p className="text-xs text-text-dim mt-2">최종 개정일: 2026-07-18 · 버전 v2</p>
       </div>
 
       <p className="text-sm text-text-secondary leading-relaxed">
@@ -76,6 +76,10 @@ export default function PrivacyPolicyPage() {
           <li>
             <span className="text-text-primary">Render / Vercel</span> — 서버 및 웹 호스팅.
           </li>
+          <li>
+            <span className="text-text-primary">Google AdSense</span> — 광고 게재 및 성과 측정(쿠키·광고 식별자 이용).
+            신체 사진·분석 데이터는 광고 사업자에게 제공되지 않습니다.
+          </li>
         </ul>
       </Section>
 
@@ -113,7 +117,50 @@ export default function PrivacyPolicyPage() {
         </ul>
       </Section>
 
-      <Section title="8. 문의처">
+      <Section title="8. 광고 및 쿠키">
+        <p>
+          서비스는 운영 비용 충당을 위해 Google AdSense를 통한 광고를 게재할 수 있습니다. 이 과정에서 쿠키 및
+          유사 기술이 사용됩니다.
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            Google을 포함한 제3자 광고 사업자는 쿠키를 사용해 이용자의 이전 방문 기록을 바탕으로 광고를 게재할 수
+            있습니다.
+          </li>
+          <li>
+            Google이 광고 쿠키(예: DoubleClick 쿠키)를 사용함으로써, Google 및 파트너는 이용자의 방문 정보를
+            토대로 광고를 제공합니다.
+          </li>
+          <li>
+            이용자는{" "}
+            <a
+              href="https://www.google.com/settings/ads"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-text-secondary hover:text-text-primary"
+            >
+              Google 광고 설정
+            </a>
+            에서 맞춤 광고를 해제할 수 있으며,{" "}
+            <a
+              href="https://www.aboutads.info"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-text-secondary hover:text-text-primary"
+            >
+              www.aboutads.info
+            </a>
+            에서 제3자 쿠키 사용을 거부할 수 있습니다.
+          </li>
+          <li>
+            <span className="text-text-primary">신체 사진과 분석 데이터(수치·코멘트)는 광고 목적으로 이용되거나
+            광고 사업자에게 제공되지 않습니다.</span> 또한 미성년으로 확인된 이용자에게는 맞춤형(개인화) 광고를
+            제공하지 않습니다.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="9. 문의처">
         <p>
           개인정보 관련 문의는 서비스 운영자 이메일(baeseunghyeok.bsh@gmail.com)로 연락 주시기 바랍니다.
         </p>
