@@ -237,14 +237,12 @@ export default function ScanDetailPage() {
     }
   };
 
-  // 링크 기반 공유(웹 인텐트) — 텍스트+서비스 링크가 확산된다. 이미지는 위 카드 저장/공유로.
-  const openIntent = (platform: "x" | "whatsapp" | "facebook") => {
+  // 링크 기반 공유(웹 인텐트) — 텍스트+서비스 링크가 확산된다. 이미지는 카드 공유/저장으로.
+  const openIntent = (platform: "x" | "whatsapp") => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
-    const url = encodeURIComponent(shareUrl);
     const targets: Record<string, string> = {
       x: `https://twitter.com/intent/tweet?text=${text}`,
       whatsapp: `https://wa.me/?text=${text}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(shareText)}`,
     };
     window.open(targets[platform], "_blank", "noopener,noreferrer");
   };
@@ -475,12 +473,27 @@ export default function ScanDetailPage() {
               <p className="text-xs text-center" style={{ color: "var(--color-accent-cyan)" }}>{shareMsg}</p>
             )}
 
-            {/* 플랫폼별 빠른 공유 */}
+            {/* 플랫폼별 빠른 공유 — Instagram · X · WhatsApp · 저장 */}
             <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={handleNativeShare}
+                disabled={sharing}
+                aria-label="Share on Instagram"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs disabled:opacity-50"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+              >
+                <span
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-sm"
+                  style={{ background: "linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)" }}
+                >
+                  📷
+                </span>
+                <span>Instagram</span>
+              </button>
               <button
                 onClick={() => openIntent("x")}
                 aria-label="Share on X"
-                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs"
                 style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
               >
                 <span className="text-lg font-bold" style={{ color: "#fff" }}>𝕏</span>
@@ -489,26 +502,17 @@ export default function ScanDetailPage() {
               <button
                 onClick={() => openIntent("whatsapp")}
                 aria-label="Share on WhatsApp"
-                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs"
                 style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
               >
                 <span className="text-lg" style={{ color: "#25D366" }}>✆</span>
                 <span>WhatsApp</span>
               </button>
               <button
-                onClick={() => openIntent("facebook")}
-                aria-label="Share on Facebook"
-                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
-                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
-              >
-                <span className="text-lg font-bold" style={{ color: "#1877F2" }}>f</span>
-                <span>Facebook</span>
-              </button>
-              <button
                 onClick={handleDownload}
                 disabled={sharing}
                 aria-label="Save image"
-                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs disabled:opacity-50"
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs disabled:opacity-50"
                 style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
               >
                 <span className="text-lg">⬇</span>
