@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, exerciseImageUrl, fetchAuthedBlobUrl, type AnalysisReport, type Exercise, type ScanSession } from "@/lib/api";
 import { muscleLabel } from "@/lib/muscle-labels";
-import { generateShareCardBlob, shareOrDownloadCard } from "@/lib/share-card";
+import { generateShareCardBlob, shareCardImage, downloadCard, SERVICE_URL } from "@/lib/share-card";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/translations";
@@ -116,6 +116,7 @@ export default function ScanDetailPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [photos, setPhotos] = useState<{ angle: string; url: string }[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   const imageCount = session?.images.length ?? 0;
 
@@ -187,18 +188,65 @@ export default function ScanDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, imageCount]);
 
-  const handleShare = async () => {
-    if (!report?.headline_stats || !session) return;
+  const shareUrl = `https://${SERVICE_URL}`;
+  const pct = report?.headline_stats?.percentile;
+  const shareText =
+    pct != null
+      ? t("result.share_text").replace("{n}", String(pct))
+      : t("result.share_text_nopct");
+
+  const buildCard = async (): Promise<Blob | null> => {
+    if (!report?.headline_stats || !session) return null;
+    return generateShareCardBlob(
+      report.headline_stats,
+      new Date(session.scan_date).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR"),
+      lang
+    );
+  };
+
+  // 네이티브 공유 시트(모바일: 인스타/X/왓츠앱 등) — 미지원 시 이미지 저장으로 폴백
+  const handleNativeShare = async () => {
+    if (!session) return;
     setSharing(true);
+    setShareMsg(null);
     try {
-      const blob = await generateShareCardBlob(
-        report.headline_stats,
-        new Date(session.scan_date).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR")
-      );
-      if (blob) await shareOrDownloadCard(blob, `swolemeter-${session.id}.png`);
+      const blob = await buildCard();
+      if (!blob) return;
+      const result = await shareCardImage(blob, `swolemeter-${session.id}.png`, `${shareText} ${shareUrl}`);
+      if (result === "unsupported") {
+        downloadCard(blob, `swolemeter-${session.id}.png`);
+        setShareMsg(t("result.share_downloaded"));
+      }
     } finally {
       setSharing(false);
     }
+  };
+
+  // 카드 이미지 저장
+  const handleDownload = async () => {
+    if (!session) return;
+    setSharing(true);
+    try {
+      const blob = await buildCard();
+      if (blob) {
+        downloadCard(blob, `swolemeter-${session.id}.png`);
+        setShareMsg(t("result.share_downloaded"));
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  // 링크 기반 공유(웹 인텐트) — 텍스트+서비스 링크가 확산된다. 이미지는 위 카드 저장/공유로.
+  const openIntent = (platform: "x" | "whatsapp" | "facebook") => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = encodeURIComponent(shareUrl);
+    const targets: Record<string, string> = {
+      x: `https://twitter.com/intent/tweet?text=${text}`,
+      whatsapp: `https://wa.me/?text=${text}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(shareText)}`,
+    };
+    window.open(targets[platform], "_blank", "noopener,noreferrer");
   };
 
   if (!session) return <p className="text-sm text-text-secondary">{t("common.loading")}</p>;
@@ -415,11 +463,60 @@ export default function ScanDetailPage() {
             </div>
           )}
 
+          {/* 공유 — 워터마크 카드 이미지 + 플랫폼별 링크 확산 */}
           <div className="space-y-3 pt-2">
-            <button onClick={handleShare} disabled={sharing} className="btn-primary disabled:opacity-50">
-              {sharing ? t("result.sharing") : t("result.share")}
+            <p className="section-label mb-1">Share <span className="sub">{t("result.share_section_sub")}</span></p>
+
+            <button onClick={handleNativeShare} disabled={sharing} className="btn-primary disabled:opacity-50">
+              {sharing ? t("result.sharing") : t("result.share_native")}
             </button>
-            <Link href="/scan/new" className="btn-secondary block text-center">
+
+            {shareMsg && (
+              <p className="text-xs text-center" style={{ color: "var(--color-accent-cyan)" }}>{shareMsg}</p>
+            )}
+
+            {/* 플랫폼별 빠른 공유 */}
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={() => openIntent("x")}
+                aria-label="Share on X"
+                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+              >
+                <span className="text-lg font-bold" style={{ color: "#fff" }}>𝕏</span>
+                <span>X</span>
+              </button>
+              <button
+                onClick={() => openIntent("whatsapp")}
+                aria-label="Share on WhatsApp"
+                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+              >
+                <span className="text-lg" style={{ color: "#25D366" }}>✆</span>
+                <span>WhatsApp</span>
+              </button>
+              <button
+                onClick={() => openIntent("facebook")}
+                aria-label="Share on Facebook"
+                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+              >
+                <span className="text-lg font-bold" style={{ color: "#1877F2" }}>f</span>
+                <span>Facebook</span>
+              </button>
+              <button
+                onClick={handleDownload}
+                disabled={sharing}
+                aria-label="Save image"
+                className="flex flex-col items-center gap-1 py-3 rounded-xl border text-xs disabled:opacity-50"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
+              >
+                <span className="text-lg">⬇</span>
+                <span>{t("result.share_download")}</span>
+              </button>
+            </div>
+
+            <Link href="/scan/new" className="btn-secondary block text-center mt-1">
               {t("result.reanalyze")}
             </Link>
           </div>
