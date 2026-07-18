@@ -4,11 +4,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError, type SignupResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 
 function OAuthCompleteInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const { t } = useI18n();
 
   const token = searchParams.get("token");
   const pendingToken = searchParams.get("pending");
@@ -32,7 +34,7 @@ function OAuthCompleteInner() {
     e.preventDefault();
     if (!pendingToken) return;
     if (!acceptTerms || !acceptPrivacy) {
-      setError("이용약관과 개인정보 수집·이용 동의는 필수입니다");
+      setError(t("signup.error_required"));
       return;
     }
     setError(null);
@@ -48,22 +50,22 @@ function OAuthCompleteInner() {
       await login(result.access_token);
       router.push("/onboarding/body-image-consent");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "가입 처리 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("signup.error_generic"));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (token) {
-    return <p className="text-sm text-text-secondary">로그인 처리 중...</p>;
+    return <p className="text-sm text-text-secondary">{t("signup.processing")}</p>;
   }
 
   if (!pendingToken) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-accent-red">{error ?? "잘못된 접근입니다"}</p>
+        <p className="text-sm text-accent-red">{error ?? t("signup.bad_access")}</p>
         <a href="/login" className="text-sm underline text-text-secondary">
-          로그인으로 돌아가기
+          {t("signup.back_login")}
         </a>
       </div>
     );
@@ -71,21 +73,21 @@ function OAuthCompleteInner() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <h1 className="text-xl font-semibold text-text-primary">추가 정보 입력</h1>
+      <h1 className="text-xl font-semibold text-text-primary">{t("signup.title")}</h1>
       <p className="text-sm text-text-secondary">
-        {email}로 소셜 로그인했습니다. 가입을 마치려면 정보를 입력해주세요.
+        {t("signup.desc").replace("{email}", email ?? "")}
       </p>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-text-primary">생년월일</label>
+        <label className="text-sm font-medium text-text-primary">{t("signup.birth")}</label>
         <input type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full" />
-        <p className="text-xs text-text-secondary">만 14세 미만은 가입할 수 없습니다.</p>
+        <p className="text-xs text-text-secondary">{t("signup.birth_note")}</p>
       </div>
 
       <div className="card space-y-2">
         <label className="flex items-start gap-2 text-sm text-text-primary">
           <input type="checkbox" required checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
-          <span>(필수) 이용약관에 동의합니다</span>
+          <span>{t("signup.terms")}</span>
         </label>
         <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
@@ -94,7 +96,7 @@ function OAuthCompleteInner() {
             checked={acceptPrivacy}
             onChange={(e) => setAcceptPrivacy(e.target.checked)}
           />
-          <span>(필수) 개인정보 수집·이용에 동의합니다</span>
+          <span>{t("signup.privacy")}</span>
         </label>
         <label className="flex items-start gap-2 text-sm text-text-primary">
           <input
@@ -102,7 +104,7 @@ function OAuthCompleteInner() {
             checked={acceptMarketing}
             onChange={(e) => setAcceptMarketing(e.target.checked)}
           />
-          <span>(선택) 마케팅 정보 수신에 동의합니다</span>
+          <span>{t("signup.marketing")}</span>
         </label>
       </div>
 
@@ -113,7 +115,7 @@ function OAuthCompleteInner() {
         disabled={submitting || !acceptTerms || !acceptPrivacy}
         className="btn-primary disabled:opacity-50"
       >
-        {submitting ? "처리 중..." : "가입 완료"}
+        {submitting ? t("common.processing") : t("signup.submit")}
       </button>
     </form>
   );

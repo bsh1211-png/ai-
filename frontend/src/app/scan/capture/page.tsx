@@ -3,17 +3,18 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError, type ScanSession } from "@/lib/api";
-
-const ANGLE_LABEL: Record<string, string> = {
-  front: "전면",
-  back: "후면",
-  side: "측면",
-};
+import { useI18n } from "@/lib/i18n";
 
 type Phase = "loading_camera" | "ready" | "countdown" | "scanning" | "analyzing" | "done" | "error";
 
 function CaptureInner() {
   const router = useRouter();
+  const { t } = useI18n();
+  const ANGLE_LABEL: Record<string, string> = {
+    front: t("angle_short.front"),
+    back: t("angle_short.back"),
+    side: t("angle_short.side"),
+  };
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId") || "";
   const angles = (searchParams.get("angles") || "front").split(",");
@@ -53,7 +54,7 @@ function CaptureInner() {
       })
       .catch(() => {
         if (cancelled) return;
-        setErrorMessage("카메라에 접근할 수 없습니다. 브라우저의 카메라 권한을 허용해주세요.");
+        setErrorMessage(t("capture.camera_error"));
         setPhase("error");
       });
 
@@ -103,7 +104,7 @@ function CaptureInner() {
   const runCaptureAndUpload = async () => {
     const result = await captureFrame();
     if (!result) {
-      setErrorMessage("촬영에 실패했습니다. 다시 시도해주세요.");
+      setErrorMessage(t("capture.capture_fail"));
       setPhase("ready");
       return;
     }
@@ -115,7 +116,7 @@ function CaptureInner() {
       form.append("file", result.blob, `${currentAngle}.jpg`);
       await api.postForm<ScanSession>(`/scans/${sessionId}/images?angle=${currentAngle}`, form);
     } catch (err) {
-      setErrorMessage(err instanceof ApiError ? err.message : "업로드 중 오류가 발생했습니다");
+      setErrorMessage(err instanceof ApiError ? err.message : t("capture.upload_error"));
       setPhase("error");
       return;
     }
@@ -137,7 +138,7 @@ function CaptureInner() {
     try {
       await api.post(`/scans/${sessionId}/analyze`);
     } catch (err) {
-      setErrorMessage(err instanceof ApiError ? err.message : "분석 요청 중 오류가 발생했습니다");
+      setErrorMessage(err instanceof ApiError ? err.message : t("capture.analyze_error"));
       setPhase("error");
       return;
     }
@@ -150,7 +151,7 @@ function CaptureInner() {
           return;
         }
         if (session.status === "failed") {
-          setErrorMessage(session.error_message ?? "분석에 실패했습니다");
+          setErrorMessage(session.error_message ?? t("capture.analyze_fail"));
           setPhase("error");
           return;
         }
@@ -179,7 +180,7 @@ function CaptureInner() {
       <div className="space-y-4 text-center pt-10">
         <p className="text-accent-red text-sm">{errorMessage}</p>
         <button onClick={() => router.push("/scan/new")} className="btn-secondary">
-          처음으로
+          {t("capture.to_start")}
         </button>
       </div>
     );
@@ -192,13 +193,13 @@ function CaptureInner() {
         style={{ background: "rgba(10,10,15,0.85)" }}
       >
         <div className="card text-center space-y-6 max-w-xs w-full py-8">
-          <p className="text-2xl font-bold font-display gradient-score">분석 완료! 🔥</p>
+          <p className="text-2xl font-bold font-display gradient-score">{t("capture.done")}</p>
           <div className="flex flex-col gap-3">
             <button onClick={() => router.push(`/scan/${sessionId}`)} className="btn-primary">
-              결과 보기
+              {t("capture.view_result")}
             </button>
             <button onClick={() => router.push("/scan/new")} className="btn-secondary">
-              재분석
+              {t("capture.reanalyze")}
             </button>
           </div>
         </div>
@@ -220,21 +221,21 @@ function CaptureInner() {
 
       {(phase === "scanning" || phase === "analyzing") && capturedDataUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={capturedDataUrl} alt="촬영된 사진" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={capturedDataUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
       )}
 
       {(phase === "scanning" || phase === "analyzing") && (
         <div className="absolute inset-0 overflow-hidden">
           <div className="scan-laser-line" />
           <div className="absolute inset-x-0 bottom-24 text-center">
-            <p className="text-white text-lg font-semibold drop-shadow">몸 상태 스캔 중...</p>
+            <p className="text-white text-lg font-semibold drop-shadow">{t("capture.scanning")}</p>
           </div>
         </div>
       )}
 
       {phase === "loading_camera" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-text-secondary text-sm">카메라를 불러오는 중...</p>
+          <p className="text-text-secondary text-sm">{t("capture.loading_camera")}</p>
         </div>
       )}
 
@@ -265,7 +266,7 @@ function CaptureInner() {
               CAPTURE {angleIndex + 1} OF {angles.length}
             </p>
             <p className="label mt-1" style={{ color: "#fff" }}>
-              {ANGLE_LABEL[currentAngle] ?? currentAngle} · 촬영 {angleIndex + 1}/{angles.length}
+              {ANGLE_LABEL[currentAngle] ?? currentAngle} · {t("capture.capture_of").replace("{i}", String(angleIndex + 1)).replace("{total}", String(angles.length))}
             </p>
           </div>
         </>
@@ -274,7 +275,7 @@ function CaptureInner() {
       {phase === "ready" && (
         <button
           onClick={() => setFacingMode((m) => (m === "user" ? "environment" : "user"))}
-          aria-label="전면/후면 카메라 전환"
+          aria-label="Toggle front/rear camera"
           className="absolute top-6 right-5 rounded-full px-4 py-2 text-sm font-medium flex items-center gap-2 active:scale-95 transition"
           style={{
             background: "rgba(0,0,0,0.55)",
@@ -283,7 +284,7 @@ function CaptureInner() {
             backdropFilter: "blur(4px)",
           }}
         >
-          🔄 {facingMode === "user" ? "후면으로" : "전면으로"}
+          🔄 {facingMode === "user" ? t("capture.to_rear") : t("capture.to_front")}
         </button>
       )}
 
@@ -302,7 +303,7 @@ function CaptureInner() {
         <div className="absolute inset-x-0 bottom-10 flex justify-center px-6">
           <button
             onClick={startCountdown}
-            aria-label="촬영 시작"
+            aria-label="Start capture"
             className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition"
             style={{ border: "4px solid #00E5FF", boxShadow: "0 0 30px rgba(0,229,255,0.6)" }}
           >

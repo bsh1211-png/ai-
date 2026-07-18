@@ -11,7 +11,8 @@ import {
   type ProgressLog,
   type ScanSession,
 } from "@/lib/api";
-import { CATEGORY_KO } from "@/lib/muscle-labels";
+import { categoryLabel } from "@/lib/muscle-labels";
+import { useI18n } from "@/lib/i18n";
 
 function WeightSparkline({ logs }: { logs: ProgressLog[] }) {
   const points = logs
@@ -42,6 +43,8 @@ function WeightSparkline({ logs }: { logs: ProgressLog[] }) {
 }
 
 export default function HistoryPage() {
+  const { t, lang } = useI18n();
+  const locale = lang === "en" ? "en-US" : "ko-KR";
   const [dashboard, setDashboard] = useState<HistorySummary | null>(null);
   const [sessions, setSessions] = useState<ScanSession[]>([]);
   const [reportsBySession, setReportsBySession] = useState<Record<string, AnalysisReport>>({});
@@ -91,7 +94,7 @@ export default function HistoryPage() {
       setNotes("");
       loadAll();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "기록 추가 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("history.error_add"));
     }
   };
 
@@ -106,9 +109,9 @@ export default function HistoryPage() {
         className="card relative overflow-hidden"
         style={{ borderColor: "var(--color-accent-cyan)", background: "rgba(0,184,255,0.08)" }}
       >
-        <p className="label mb-2">Dashboard <span className="text-text-secondary normal-case">· 종합</span></p>
+        <p className="label mb-2">{t("history.dashboard")} <span className="text-text-secondary normal-case">{t("history.dashboard_sub")}</span></p>
         <p className="text-base font-medium text-text-primary whitespace-pre-wrap">
-          {dashboard ? dashboard.summary : "불러오는 중..."}
+          {dashboard ? dashboard.summary : t("common.loading")}
         </p>
       </div>
 
@@ -118,16 +121,16 @@ export default function HistoryPage() {
         className="card block"
         style={{ borderColor: "#FF6B35", background: "rgba(255,107,53,0.06)" }}
       >
-        <p className="label mb-1" style={{ color: "#FF6B35" }}>Goal <span className="text-text-secondary normal-case">· 목표</span></p>
+        <p className="label mb-1" style={{ color: "#FF6B35" }}>{t("history.goal")} <span className="text-text-secondary normal-case">{t("history.goal_sub")}</span></p>
         <p className="text-sm text-text-primary">
-          {activeGoal?.goal_text ? `🎯 ${activeGoal.goal_text}` : "아직 목표가 없어요 — 눌러서 설정하기 →"}
+          {activeGoal?.goal_text ? `🎯 ${activeGoal.goal_text}` : t("history.no_goal")}
         </p>
       </Link>
 
       <div>
-        <p className="label mb-1">History <span className="text-text-secondary normal-case">· 기록</span></p>
-        <h1 className="hero-headline-kr text-text-primary mb-4">분석 기록</h1>
-        {sessions.length === 0 && <p className="text-sm text-text-secondary">아직 분석 기록이 없습니다.</p>}
+        <p className="label mb-1">{t("history.history")} <span className="text-text-secondary normal-case">{t("history.history_sub")}</span></p>
+        <h1 className="hero-headline-kr text-text-primary mb-4">{t("history.title")}</h1>
+        {sessions.length === 0 && <p className="text-sm text-text-secondary">{t("history.no_records")}</p>}
         <ul className="space-y-2">
           {sessions.map((s) => {
             const report = reportsBySession[s.id];
@@ -136,18 +139,18 @@ export default function HistoryPage() {
                 <div className="flex items-center gap-3">
                   {report?.headline_stats?.percentile != null && (
                     <span className="badge-info text-xs px-2 py-1 rounded font-display shrink-0">
-                      상위 {report.headline_stats.percentile}%
+                      {t("history.top_percent").replace("{n}", String(report.headline_stats.percentile))}
                     </span>
                   )}
                   <div>
-                    <p className="text-text-primary">{new Date(s.scan_date).toLocaleDateString("ko-KR")}</p>
+                    <p className="text-text-primary">{new Date(s.scan_date).toLocaleDateString(locale)}</p>
                     <p className="text-xs text-text-secondary">
-                      {CATEGORY_KO[s.category] ?? s.category} · {s.status}
+                      {categoryLabel(s.category, lang)} · {s.status}
                     </p>
                   </div>
                 </div>
                 <Link href={`/scan/${s.id}`} className="min-h-11 flex items-center text-sm text-accent-cyan">
-                  보기
+                  {t("common.view")}
                 </Link>
               </li>
             );
@@ -156,26 +159,26 @@ export default function HistoryPage() {
       </div>
 
       <div>
-        <p className="label mb-4">Progress <span className="text-text-secondary normal-case">· 몸무게/메모</span></p>
+        <p className="label mb-4">{t("history.progress")} <span className="text-text-secondary normal-case">{t("history.progress_sub")}</span></p>
         <WeightSparkline logs={logs} />
         <form onSubmit={addLog} className="flex flex-wrap gap-2 my-4">
           <input
             type="number"
             step="0.1"
-            placeholder="몸무게(kg)"
+            placeholder={t("history.weight_placeholder")}
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             className="w-32"
           />
           <input
             type="text"
-            placeholder="메모"
+            placeholder={t("history.notes_placeholder")}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="flex-1 min-w-32"
           />
           <button type="submit" className="btn-primary w-auto px-4">
-            추가
+            {t("history.add")}
           </button>
         </form>
         {error && <p className="text-sm text-accent-red mb-2">{error}</p>}
@@ -183,11 +186,11 @@ export default function HistoryPage() {
           {logs.map((l) => (
             <li key={l.id} className="flex items-center justify-between text-text-secondary py-1">
               <span>
-                {new Date(l.logged_at).toLocaleDateString("ko-KR")} —{" "}
+                {new Date(l.logged_at).toLocaleDateString(locale)} —{" "}
                 {l.weight_kg ? `${l.weight_kg}kg` : ""} {l.notes}
               </span>
               <button onClick={() => deleteLog(l.id)} className="text-text-dim hover:text-accent-red text-xs px-2">
-                삭제
+                {t("history.delete")}
               </button>
             </li>
           ))}

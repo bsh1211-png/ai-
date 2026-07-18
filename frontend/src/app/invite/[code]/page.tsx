@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 
 type State = "working" | "done" | "needlogin" | "error";
 
@@ -12,6 +13,7 @@ export default function InvitePage() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const [state, setState] = useState<State>("working");
   const [friendName, setFriendName] = useState("");
 
@@ -36,37 +38,35 @@ export default function InvitePage() {
   return (
     <div className="space-y-6 pt-10 text-center">
       <div>
-        <p className="label">Friend Duel</p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">친구 대결 초대</h1>
+        <p className="label">{t("invite.tag")}</p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("invite.title")}</h1>
       </div>
 
-      {state === "working" && <p className="text-sm text-text-secondary">초대를 처리하는 중...</p>}
+      {state === "working" && <p className="text-sm text-text-secondary">{t("invite.working")}</p>}
 
       {state === "needlogin" && (
         <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            로그인하면 친구와의 대결에 바로 참여할 수 있어요. 💪
-          </p>
+          <p className="text-sm text-text-secondary">{t("invite.needlogin")}</p>
           <Link href="/login" className="btn-primary inline-block text-center">
-            로그인하고 참여하기
+            {t("invite.login_join")}
           </Link>
         </div>
       )}
 
       {state === "done" && (
         <div className="space-y-3">
-          <p className="text-2xl font-display gradient-score">연결 완료! 🔥</p>
+          <p className="text-2xl font-display gradient-score">{t("invite.done")}</p>
           <p className="text-sm text-text-secondary">
-            {friendName}님과 친구가 되었습니다. 랭킹으로 이동합니다...
+            {t("invite.done_desc").replace("{name}", friendName)}
           </p>
         </div>
       )}
 
       {state === "error" && (
         <div className="space-y-4">
-          <p className="text-sm text-accent-red">유효하지 않거나 만료된 초대입니다.</p>
+          <p className="text-sm text-accent-red">{t("invite.error")}</p>
           <Link href="/ranking" className="btn-secondary inline-block text-center">
-            내 랭킹 보기
+            {t("invite.view_ranking")}
           </Link>
         </div>
       )}

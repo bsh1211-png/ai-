@@ -10,3 +10,8 @@ ANALYSIS_DISCLAIMER = (
     "이 분석은 참고용이며 전문 트레이너 또는 의료진 상담을 권장합니다. "
     "신체는 사람마다 다르게 발달하니 비교보다 성장의 관점으로 봐주세요."
 )
+
+ANALYSIS_DISCLAIMER_EN = (
+    "This analysis is for reference only; consulting a professional trainer or medical provider is recommended. "
+    "Everyone's body develops differently, so view this through the lens of growth rather than comparison."
+)

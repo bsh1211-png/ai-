@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { api, ApiError, type Goal } from "@/lib/api";
 import { AuthedImage } from "@/components/authed-image";
+import { useI18n } from "@/lib/i18n";
 
 export default function GoalsPage() {
+  const { t } = useI18n();
   const [goalText, setGoalText] = useState("");
   const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +55,9 @@ export default function GoalsPage() {
     try {
       const goal = await api.post<Goal>("/goals", { goal_text: goalText });
       setActiveGoal(goal);
-      setSavedMsg("✅ 목표가 저장되었어요. 다음 신체 분석부터 이 목표 대비 일치율과 방향 조언이 표시됩니다.");
+      setSavedMsg(t("goals.saved_text"));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "목표 설정 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("goals.error_save"));
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +66,7 @@ export default function GoalsPage() {
   const handleReferenceUpload = async () => {
     if (!refFile) return;
     if (!refConsent) {
-      setRefError("사진 사용 동의가 필요합니다");
+      setRefError(t("goals.consent_needed"));
       return;
     }
     setRefSubmitting(true);
@@ -80,11 +82,11 @@ export default function GoalsPage() {
       setRefFile(null);
       setSavedMsg(
         updated.goal_text
-          ? `✅ 워너비 사진을 분석했어요! AI가 파악한 목표 체형: "${updated.goal_text}"`
-          : "✅ 워너비 사진이 저장되었어요."
+          ? t("goals.analyzed").replace("{text}", updated.goal_text)
+          : t("goals.ref_saved")
       );
     } catch (err) {
-      setRefError(err instanceof ApiError ? err.message : "업로드 중 오류가 발생했습니다");
+      setRefError(err instanceof ApiError ? err.message : t("goals.error_upload"));
     } finally {
       setRefSubmitting(false);
     }
@@ -93,20 +95,18 @@ export default function GoalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="label">Your Goal <span className="text-text-secondary normal-case">· 목표 설정</span></p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">워너비 체형을 설정하세요</h1>
+        <p className="label">{t("goals.tag")} <span className="text-text-secondary normal-case">{t("goals.tag_sub")}</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("goals.title")}</h1>
       </div>
 
       {/* 현재 설정된 목표 */}
       {activeGoal?.goal_text ? (
         <div className="card" style={{ borderColor: "var(--color-accent-cyan)" }}>
-          <p className="label mb-1" style={{ color: "var(--color-accent-cyan)" }}>Current Goal <span className="normal-case" style={{ color: "var(--color-text-secondary)" }}>· 현재 목표</span></p>
+          <p className="label mb-1" style={{ color: "var(--color-accent-cyan)" }}>{t("goals.current")} <span className="normal-case" style={{ color: "var(--color-text-secondary)" }}>{t("goals.current_sub")}</span></p>
           <p className="text-sm text-text-primary">🎯 {activeGoal.goal_text}</p>
         </div>
       ) : (
-        <p className="text-sm text-text-secondary">
-          아직 설정된 목표가 없어요. 사진이나 글로 워너비 체형을 등록하면, 신체 분석 때 목표 일치율과 방향 조언을 받을 수 있어요.
-        </p>
+        <p className="text-sm text-text-secondary">{t("goals.none")}</p>
       )}
 
       {/* 저장 완료 알림 */}
@@ -126,17 +126,17 @@ export default function GoalsPage() {
             <>
               {refPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={refPreview} alt="워너비 미리보기" className="w-full h-40 object-cover rounded analysis-photo" />
+                <img src={refPreview} alt={t("goals.ref_preview_alt")} className="w-full h-40 object-cover rounded analysis-photo" />
               ) : (
                 activeGoal && (
                   <AuthedImage
                     path={`/goals/${activeGoal.id}/reference-image/file`}
-                    alt="워너비 목표 사진"
+                    alt={t("goals.ref_alt")}
                     className="w-full h-40 object-cover rounded analysis-photo"
                   />
                 )
               )}
-              <span className="badge-info text-xs px-2 py-1 rounded-md absolute top-2 right-2">변경</span>
+              <span className="badge-info text-xs px-2 py-1 rounded-md absolute top-2 right-2">{t("goals.change")}</span>
             </>
           ) : (
             <>
@@ -146,9 +146,9 @@ export default function GoalsPage() {
               >
                 📷
               </span>
-              <p className="text-sm font-medium text-text-primary">워너비 몸 사진 업로드</p>
+              <p className="text-sm font-medium text-text-primary">{t("goals.upload_title")}</p>
               <p className="text-xs text-text-secondary text-center px-6">
-                목표로 하는 체형 사진을 올려주세요. AI가 비교 분석합니다
+                {t("goals.upload_desc")}
               </p>
             </>
           )}
@@ -169,11 +169,11 @@ export default function GoalsPage() {
                 checked={refConsent}
                 onChange={(e) => setRefConsent(e.target.checked)}
               />
-              본인이 권리를 가졌거나 비공개 개인용 비교 목적으로만 사용함에 동의합니다
+              {t("goals.consent_label")}
             </label>
             {refError && <p className="text-sm text-accent-red">{refError}</p>}
             <button onClick={handleReferenceUpload} disabled={refSubmitting} className="btn-secondary w-full">
-              {refSubmitting ? "업로드 중..." : "워너비 사진 저장"}
+              {refSubmitting ? t("goals.uploading") : t("goals.save_ref")}
             </button>
           </div>
         )}
@@ -181,16 +181,16 @@ export default function GoalsPage() {
 
       {/* 텍스트 설명 */}
       <form onSubmit={handleSaveText} className="space-y-3">
-        <label className="text-sm font-medium text-text-primary">글로 설명하기</label>
+        <label className="text-sm font-medium text-text-primary">{t("goals.text_label")}</label>
         <textarea
           value={goalText}
           onChange={(e) => setGoalText(e.target.value)}
-          placeholder="예: 어깨가 넓고 허리가 가는 역삼각형 체형, 복근이 선명한 몸"
+          placeholder={t("goals.text_placeholder")}
           className="w-full h-28"
         />
         {error && <p className="text-sm text-accent-red">{error}</p>}
         <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
-          {submitting ? "저장 중..." : "목표 저장"}
+          {submitting ? t("goals.saving") : t("goals.save_goal")}
         </button>
       </form>
     </div>

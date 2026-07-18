@@ -4,18 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api, type AnalysisReport, type ScanSession } from "@/lib/api";
-import { CATEGORY_KO } from "@/lib/muscle-labels";
+import { categoryLabel } from "@/lib/muscle-labels";
 import { LoginScreen } from "@/components/login-screen";
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 6) return "좋은 새벽이에요";
-  if (hour < 12) return "좋은 아침이에요";
-  if (hour < 18) return "좋은 오후예요";
-  return "좋은 저녁이에요";
-}
+import { useI18n } from "@/lib/i18n";
 
 function RecentAnalysisCard() {
+  const { t, lang } = useI18n();
   const [session, setSession] = useState<ScanSession | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +34,7 @@ function RecentAnalysisCard() {
 
   return (
     <Link href={`/scan/${session.id}`} className="card block space-y-3">
-      <p className="label">Latest Scan <span className="text-text-secondary normal-case">· 최근 분석</span></p>
+      <p className="label">{t("home.latest_scan")} <span className="text-text-secondary normal-case">{t("home.latest_scan_sub")}</span></p>
       <div className="flex items-end justify-between">
         <p className="display-number text-5xl gradient-score">
           {stats?.percentile ?? "-"}<span className="text-2xl">%</span>
@@ -48,15 +42,15 @@ function RecentAnalysisCard() {
         <div className="flex gap-1.5">
           {stats?.body_fat_estimate_pct != null && (
             <span className="badge-success text-xs px-2 py-1 rounded-md font-display">
-              체지방 {stats.body_fat_estimate_pct}%
+              {t("home.body_fat_badge").replace("{n}", String(stats.body_fat_estimate_pct))}
             </span>
           )}
         </div>
       </div>
       <div className="flex justify-between text-xs text-text-secondary">
-        <span>{new Date(session.scan_date).toLocaleDateString("ko-KR")}</span>
-        <span>{CATEGORY_KO[session.category] ?? session.category}</span>
-        <span>보완 부위 {report.weak_points.length}곳</span>
+        <span>{new Date(session.scan_date).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR")}</span>
+        <span>{categoryLabel(session.category, lang)}</span>
+        <span>{t("home.weak_points_count").replace("{n}", String(report.weak_points.length))}</span>
       </div>
     </Link>
   );
@@ -64,6 +58,7 @@ function RecentAnalysisCard() {
 
 export default function Home() {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   // 로그인 전에는 로딩/빈 화면 없이 무조건 로그인 화면을 첫 화면으로 노출한다.
   // 유효한 토큰이 있으면 백그라운드 인증 확인 후 자동으로 대시보드로 전환된다.
@@ -74,21 +69,25 @@ export default function Home() {
   if (user.is_banned) {
     return (
       <div className="space-y-5 pt-6">
-        <p className="label">Account Suspended <span className="text-text-secondary normal-case">· 계정 정지</span></p>
-        <h1 className="hero-headline-kr text-accent-red">계정 정지</h1>
+        <p className="label">{t("home.banned_tag")} <span className="text-text-secondary normal-case">{t("home.banned_tag_sub")}</span></p>
+        <h1 className="hero-headline-kr text-accent-red">{t("home.banned_title")}</h1>
         <div className="card" style={{ borderColor: "var(--color-accent-red)" }}>
           <p className="text-sm text-text-secondary leading-relaxed">
-            부적절한 이미지 업로드가 누적되어 계정 이용이 영구 정지되었습니다. 분석 기능을 사용할 수 없습니다.
+            {t("home.banned_desc")}
           </p>
         </div>
       </div>
     );
   }
 
+  const hour = new Date().getHours();
+  const greetingKey =
+    hour < 6 ? "home.greeting.dawn" : hour < 12 ? "home.greeting.morning" : hour < 18 ? "home.greeting.afternoon" : "home.greeting.evening";
+
   return (
     <div className="space-y-6">
       <div>
-        <p className="label">{greeting()}</p>
+        <p className="label">{t(greetingKey as Parameters<typeof t>[0])}</p>
         <h1 className="hero-headline-kr text-text-primary mt-2">
           {user.email.split("@")[0]}
         </h1>
@@ -100,20 +99,20 @@ export default function Home() {
         style={{ borderColor: "var(--color-accent-cyan)" }}
       >
         <div>
-          <p className="label-big text-accent-cyan text-3xl">Start Analysis</p>
-          <p className="text-xs text-text-secondary mt-1">분석 시작 · 사진을 찍고 AI가 체형을 분석합니다</p>
+          <p className="label-big text-accent-cyan text-3xl">{t("home.start_title")}</p>
+          <p className="text-xs text-text-secondary mt-1">{t("home.start_desc")}</p>
         </div>
         <span className="text-accent-cyan text-3xl shrink-0">→</span>
       </Link>
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/goals" className="card text-center py-5">
-          <p className="label-big text-text-primary text-xl">Goal</p>
-          <p className="text-xs text-text-secondary mt-1">목표 설정</p>
+          <p className="label-big text-text-primary text-xl">{t("home.goal")}</p>
+          <p className="text-xs text-text-secondary mt-1">{t("home.goal_sub")}</p>
         </Link>
         <Link href="/history" className="card text-center py-5">
-          <p className="label-big text-text-primary text-xl">History</p>
-          <p className="text-xs text-text-secondary mt-1">기록 보기</p>
+          <p className="label-big text-text-primary text-xl">{t("home.history")}</p>
+          <p className="text-xs text-text-secondary mt-1">{t("home.history_sub")}</p>
         </Link>
       </div>
 

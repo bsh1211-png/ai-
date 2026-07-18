@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 
 export function Nav() {
   const { user, logout } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const router = useRouter();
 
   return (
@@ -28,15 +30,23 @@ export function Nav() {
 
         <div className="flex-1" />
 
+        <button
+          onClick={() => setLang(lang === "ko" ? "en" : "ko")}
+          className="text-text-dim hover:text-text-secondary text-xs border border-border rounded px-1.5 py-0.5"
+          aria-label="Toggle language"
+        >
+          {t("nav.lang_toggle")}
+        </button>
+
         {user ? (
           <>
             {!user.is_minor && (
               <Link href="/ranking" className="text-text-secondary hover:text-text-primary text-xs">
-                랭킹
+                {t("common.ranking")}
               </Link>
             )}
             <Link href="/settings" className="text-text-dim hover:text-text-secondary text-xs">
-              설정
+              {t("common.settings")}
             </Link>
             <button
               onClick={() => {
@@ -45,12 +55,12 @@ export function Nav() {
               }}
               className="text-text-dim hover:text-text-secondary text-xs"
             >
-              로그아웃
+              {t("common.logout")}
             </button>
           </>
         ) : (
           <Link href="/login" className="text-text-secondary hover:text-text-primary text-sm">
-            로그인
+            {t("common.login")}
           </Link>
         )}
       </div>

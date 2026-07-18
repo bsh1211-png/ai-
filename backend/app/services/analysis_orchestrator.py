@@ -29,10 +29,11 @@ MAX_RETRIES = 5
 RETRY_BACKOFF_SECONDS = 8
 
 
-def run_analysis(session_id) -> None:
+def run_analysis(session_id, lang: str = "ko") -> None:
     """업로드 완료된 세션에 대해 pose + vision 분석을 수행하고 리포트를 생성한다.
 
     FastAPI BackgroundTasks로 호출되므로 자체 DB 세션을 새로 연다.
+    lang은 AI 코멘트를 생성할 언어("ko"/"en").
     """
     db: Session = SessionLocal()
     try:
@@ -115,6 +116,7 @@ def run_analysis(session_id) -> None:
                     goal_image_bytes,
                     category=session.category.value,
                     is_minor=is_minor,
+                    lang=lang,
                 )
                 break
             except vision_service.DailyQuotaExceeded:

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Header, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -135,13 +135,15 @@ def trigger_analysis(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
+    x_lang: str = Header("ko", alias="X-Lang"),
 ) -> dict:
     session = _get_owned_session(db, session_id, current_user)
     active_images = [img for img in session.images if img.deleted_at is None]
     if not active_images:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="업로드된 이미지가 없습니다")
 
-    background_tasks.add_task(run_analysis, session.id)
+    lang = "en" if x_lang == "en" else "ko"
+    background_tasks.add_task(run_analysis, session.id, lang)
     return {"status": "scheduled"}
 
 

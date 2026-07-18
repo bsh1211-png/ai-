@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -59,12 +59,18 @@ def _build_history_context(db: Session, user_id) -> tuple[str, int]:
 def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    x_lang: str = Header("ko", alias="X-Lang"),
 ) -> HistorySummaryResponse:
+    lang = "en" if x_lang == "en" else "ko"
     context, report_count = _build_history_context(db, current_user.id)
 
     if report_count < MIN_REPORTS_FOR_SUMMARY:
         return HistorySummaryResponse(
-            summary="분석 기록이 더 쌓이면 변화 추이를 종합해서 짚어드릴게요. 일단 분석을 한 번 더 해보세요.",
+            summary=(
+                "Once you have a few more analyses, I'll summarize your trend for you. Try running one more analysis first."
+                if lang == "en"
+                else "분석 기록이 더 쌓이면 변화 추이를 종합해서 짚어드릴게요. 일단 분석을 한 번 더 해보세요."
+            ),
             generated_at=datetime.now(timezone.utc),
             has_enough_data=False,
         )
@@ -85,10 +91,14 @@ def get_dashboard_summary(
         )
 
     try:
-        summary_text = vision_service.generate_history_summary(db, context)
+        summary_text = vision_service.generate_history_summary(db, context, lang)
     except (vision_service.DailyQuotaExceeded, vision_service.StillAnalyzing):
         # 실패한 폴백 메시지는 캐싱하지 않는다 -> 다음 호출에서 다시 Gemini를 시도하게 둔다.
-        fallback = "지금은 분석 요청이 많아 종합 총평을 생성할 수 없어요. 잠시 후 다시 확인해주세요."
+        fallback = (
+            "There are too many requests right now to generate your summary. Please check back shortly."
+            if lang == "en"
+            else "지금은 분석 요청이 많아 종합 총평을 생성할 수 없어요. 잠시 후 다시 확인해주세요."
+        )
         return HistorySummaryResponse(
             summary=fallback,
             generated_at=cached.generated_at if cached else datetime.now(timezone.utc),

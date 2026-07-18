@@ -29,6 +29,9 @@ async function request<T>(
   if (options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
+  // 현재 UI 언어를 백엔드에 전달해 AI 코멘트를 같은 언어로 생성하게 한다.
+  const lang = typeof window !== "undefined" ? window.localStorage.getItem("lang") : null;
+  headers.set("X-Lang", lang === "en" ? "en" : "ko");
 
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
 

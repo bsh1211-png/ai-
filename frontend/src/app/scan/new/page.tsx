@@ -2,22 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const CATEGORIES = [
-  { value: "full_body", en: "FULL BODY", label: "전신", desc: "전체 밸런스 분석" },
-  { value: "upper", en: "UPPER BODY", label: "상체", desc: "어깨·가슴·팔·복근" },
-  { value: "lower", en: "LOWER BODY", label: "하체", desc: "허벅지·종아리·힙" },
-];
+import { useI18n } from "@/lib/i18n";
 
 export default function ScanCategoryPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
+
+  const CATEGORIES = [
+    { value: "full_body", en: "FULL BODY", label: t("category.full_body"), desc: t("scannew.full_body_desc") },
+    { value: "upper", en: "UPPER BODY", label: t("category.upper"), desc: t("scannew.upper_desc") },
+    { value: "lower", en: "LOWER BODY", label: t("category.lower"), desc: t("scannew.lower_desc") },
+  ];
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="label">Select Target <span className="text-text-secondary normal-case">· 부위 선택</span></p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">어디를 분석할까요?</h1>
+        <p className="label">{t("scannew.tag")} <span className="text-text-secondary normal-case">{t("scannew.tag_sub")}</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("scannew.title")}</h1>
       </div>
 
       <div className="space-y-3">
@@ -54,7 +56,7 @@ export default function ScanCategoryPage() {
         disabled={!selected}
         className="btn-primary disabled:opacity-40"
       >
-        다음
+        {t("common.next")}
       </button>
     </div>
   );

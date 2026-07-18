@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -48,6 +48,7 @@ async def upload_reference_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db),
+    x_lang: str = Header("ko", alias="X-Lang"),
 ) -> BodyGoal:
     goal = db.get(BodyGoal, goal_id)
     if goal is None or goal.user_id != current_user.id:
@@ -63,7 +64,7 @@ async def upload_reference_image(
     # 사진에 맞춰 목표 텍스트를 자동으로 조정. 노골적 성적 이미지면 저장하지 않고 거부 + 스트라이크.
     described = None
     try:
-        described = vision_service.describe_goal_image(db, content)
+        described = vision_service.describe_goal_image(db, content, "en" if x_lang == "en" else "ko")
     except vision_service.ExplicitContentDetected:
         strikes, banned = moderation.register_nsfw_strike(db, current_user)
         raise HTTPException(

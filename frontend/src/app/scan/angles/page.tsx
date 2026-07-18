@@ -3,25 +3,8 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError, type ScanSession } from "@/lib/api";
-import { CATEGORY_KO } from "@/lib/muscle-labels";
-
-const ANGLE_OPTIONS: Record<string, { value: string; label: string; desc: string }[]> = {
-  full_body: [
-    { value: "front", label: "전면", desc: "정면에서 바라본 모습" },
-    { value: "back", label: "후면", desc: "뒤에서 바라본 모습" },
-    { value: "side", label: "측면", desc: "옆에서 바라본 모습" },
-  ],
-  upper: [
-    { value: "front", label: "상체 전면", desc: "정면에서 바라본 상체" },
-    { value: "back", label: "상체 후면", desc: "뒤에서 바라본 상체" },
-    { value: "side", label: "상체 측면", desc: "옆에서 바라본 상체" },
-  ],
-  lower: [
-    { value: "front", label: "하체 전면", desc: "정면에서 바라본 하체" },
-    { value: "back", label: "하체 후면", desc: "뒤에서 바라본 하체" },
-    { value: "side", label: "하체 측면", desc: "옆에서 바라본 하체" },
-  ],
-};
+import { categoryLabel } from "@/lib/muscle-labels";
+import { useI18n } from "@/lib/i18n";
 
 const DEFAULT_CHECKED: Record<string, string[]> = {
   full_body: ["front", "back", "side"],
@@ -32,7 +15,26 @@ const DEFAULT_CHECKED: Record<string, string[]> = {
 function AnglesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, lang } = useI18n();
   const category = searchParams.get("category") || "full_body";
+
+  const ANGLE_OPTIONS: Record<string, { value: string; label: string; desc: string }[]> = {
+    full_body: [
+      { value: "front", label: t("angle.front"), desc: t("angle.front_desc") },
+      { value: "back", label: t("angle.back"), desc: t("angle.back_desc") },
+      { value: "side", label: t("angle.side"), desc: t("angle.side_desc") },
+    ],
+    upper: [
+      { value: "front", label: t("angle.upper_front"), desc: t("angle.upper_front_desc") },
+      { value: "back", label: t("angle.upper_back"), desc: t("angle.upper_back_desc") },
+      { value: "side", label: t("angle.upper_side"), desc: t("angle.upper_side_desc") },
+    ],
+    lower: [
+      { value: "front", label: t("angle.lower_front"), desc: t("angle.lower_front_desc") },
+      { value: "back", label: t("angle.lower_back"), desc: t("angle.lower_back_desc") },
+      { value: "side", label: t("angle.lower_side"), desc: t("angle.lower_side_desc") },
+    ],
+  };
   const options = ANGLE_OPTIONS[category] ?? ANGLE_OPTIONS.full_body;
 
   const [selected, setSelected] = useState<string[]>(DEFAULT_CHECKED[category] ?? ["front"]);
@@ -45,7 +47,7 @@ function AnglesInner() {
 
   const handleNext = async () => {
     if (selected.length === 0) {
-      setError("최소 1개 각도를 선택해주세요");
+      setError(t("angles.error_min"));
       return;
     }
     setBusy(true);
@@ -55,7 +57,7 @@ function AnglesInner() {
       const angleQuery = selected.join(",");
       router.push(`/scan/capture?sessionId=${session.id}&angles=${angleQuery}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "세션 생성 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("angles.error_session"));
     } finally {
       setBusy(false);
     }
@@ -66,8 +68,8 @@ function AnglesInner() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="label">Angles <span className="text-text-secondary normal-case">· {CATEGORY_KO[category]} 각도 선택</span></p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">어떤 각도를 찍을까요?</h1>
+        <p className="label">Angles <span className="text-text-secondary normal-case">· {categoryLabel(category, lang)} {t("angles.tag_suffix")}</span></p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("angles.title")}</h1>
       </div>
       <div className="space-y-3">
         {options.map((opt) => {
@@ -108,7 +110,7 @@ function AnglesInner() {
       </div>
       {error && <p className="text-sm text-accent-red">{error}</p>}
       <button onClick={handleNext} disabled={busy} className="btn-primary disabled:opacity-50">
-        {busy ? "준비 중..." : "촬영 시작"}
+        {busy ? t("angles.preparing") : t("angles.start_capture")}
       </button>
     </div>
   );

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type ConsentStatus } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { LoadingScreen } from "@/components/loading-screen";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, loading, logout, refresh } = useAuth();
+  const { t } = useI18n();
   const [consent, setConsent] = useState<ConsentStatus | null>(null);
   const [busy, setBusy] = useState<null | "revoke" | "delete">(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -20,12 +22,7 @@ export default function SettingsPage() {
   }, []);
 
   const handleRevoke = async () => {
-    if (
-      !window.confirm(
-        "동의를 철회하면 지금까지 저장된 모든 신체 사진과 분석 기록(히스토리)이 즉시 완전 삭제됩니다. 계속하시겠습니까?"
-      )
-    )
-      return;
+    if (!window.confirm(t("settings.revoke_confirm"))) return;
     setBusy("revoke");
     setError(null);
     setMessage(null);
@@ -34,21 +31,16 @@ export default function SettingsPage() {
       await refresh();
       const status = await api.get<ConsentStatus>("/consents/me");
       setConsent(status);
-      setMessage(`동의를 철회하고 저장된 사진 ${res.deleted_photos}개를 삭제했습니다.`);
+      setMessage(t("settings.revoke_done").replace("{n}", String(res.deleted_photos)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "철회 처리 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("settings.error_revoke"));
     } finally {
       setBusy(null);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        "회원 탈퇴 시 계정과 저장된 모든 신체 사진·분석 기록이 즉시 완전 삭제되며 되돌릴 수 없습니다. 정말 탈퇴하시겠습니까?"
-      )
-    )
-      return;
+    if (!window.confirm(t("settings.delete_confirm"))) return;
     setBusy("delete");
     setError(null);
     try {
@@ -56,7 +48,7 @@ export default function SettingsPage() {
       logout();
       router.push("/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "탈퇴 처리 중 오류가 발생했습니다");
+      setError(err instanceof ApiError ? err.message : t("settings.error_delete"));
       setBusy(null);
     }
   };
@@ -66,9 +58,9 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-text-secondary">로그인이 필요합니다.</p>
+        <p className="text-sm text-text-secondary">{t("common.need_login")}</p>
         <Link href="/login" className="btn-primary inline-block text-center">
-          로그인
+          {t("common.login")}
         </Link>
       </div>
     );
@@ -78,11 +70,11 @@ export default function SettingsPage() {
     <div className="space-y-8">
       <div>
         <p className="label">Settings</p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">설정</h1>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("settings.title")}</h1>
       </div>
 
       <section className="card space-y-1">
-        <p className="label">계정</p>
+        <p className="label">{t("settings.account")}</p>
         <p className="text-sm text-text-primary">{user.email}</p>
       </section>
 
@@ -95,10 +87,10 @@ export default function SettingsPage() {
 
       {/* 신체 사진 동의 관리 */}
       <section className="space-y-3">
-        <p className="section-label">Privacy <span className="sub">· 신체 사진 · 개인정보</span></p>
+        <p className="section-label">{t("settings.privacy")} <span className="sub">{t("settings.privacy_sub")}</span></p>
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-text-secondary">신체 사진 수집·보관 동의</p>
+            <p className="text-sm text-text-secondary">{t("settings.consent_label")}</p>
             <span
               className="text-xs px-2 py-0.5 rounded-md"
               style={{
@@ -106,11 +98,11 @@ export default function SettingsPage() {
                 color: consent?.body_image_consent_active ? "var(--color-accent-cyan)" : "var(--color-text-dim)",
               }}
             >
-              {consent?.body_image_consent_active ? "동의함" : "동의 안 함"}
+              {consent?.body_image_consent_active ? t("settings.consent_yes") : t("settings.consent_no")}
             </span>
           </div>
           <p className="text-xs text-text-dim leading-relaxed">
-            철회하면 저장된 모든 신체 사진과 분석 기록이 즉시 완전 삭제됩니다.
+            {t("settings.revoke_note")}
           </p>
           {consent?.body_image_consent_active && (
             <button
@@ -118,14 +110,14 @@ export default function SettingsPage() {
               disabled={busy !== null}
               className="btn-secondary w-full disabled:opacity-50"
             >
-              {busy === "revoke" ? "처리 중..." : "동의 철회 및 사진 삭제"}
+              {busy === "revoke" ? t("common.processing") : t("settings.revoke_btn")}
             </button>
           )}
           <Link
             href="/privacy"
             className="block text-center text-xs underline text-text-secondary hover:text-text-primary"
           >
-            개인정보처리방침 보기
+            {t("settings.view_privacy")}
           </Link>
         </div>
       </section>
@@ -133,11 +125,11 @@ export default function SettingsPage() {
       {/* 회원 탈퇴 */}
       <section className="space-y-3">
         <p className="section-label" style={{ color: "var(--color-accent-red)" }}>
-          Danger Zone <span className="sub">· 회원 탈퇴</span>
+          {t("settings.danger")} <span className="sub">{t("settings.danger_sub")}</span>
         </p>
         <div className="card space-y-3" style={{ borderColor: "var(--color-accent-red)" }}>
           <p className="text-xs text-text-dim leading-relaxed">
-            탈퇴하면 계정과 저장된 모든 신체 사진·분석 기록이 즉시 완전 삭제되며 되돌릴 수 없습니다.
+            {t("settings.delete_note")}
           </p>
           <button
             onClick={handleDeleteAccount}
@@ -145,7 +137,7 @@ export default function SettingsPage() {
             className="w-full min-h-11 rounded-xl px-4 py-3 text-sm font-medium disabled:opacity-50"
             style={{ border: "1px solid var(--color-accent-red)", color: "var(--color-accent-red)" }}
           >
-            {busy === "delete" ? "처리 중..." : "회원 탈퇴"}
+            {busy === "delete" ? t("common.processing") : t("settings.delete_btn")}
           </button>
         </div>
       </section>

@@ -7,41 +7,44 @@ import { api, exerciseImageUrl, fetchAuthedBlobUrl, type AnalysisReport, type Ex
 import { muscleLabel } from "@/lib/muscle-labels";
 import { generateShareCardBlob, shareOrDownloadCard } from "@/lib/share-card";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/translations";
 
-const STATUS_LABEL: Record<string, string> = {
-  uploaded: "업로드됨 (분석 대기)",
-  processing: "분석 중...",
-  completed: "분석 완료",
-  failed: "분석 실패",
+const STATUS_KEY: Record<string, TranslationKey> = {
+  uploaded: "result.status.uploaded",
+  processing: "result.status.processing",
+  completed: "result.status.completed",
+  failed: "result.status.failed",
 };
 
-const DIRECTION_LABEL: Record<string, string> = {
-  bulk_up: "🔺 벌크업 방향",
-  slim_down: "🔻 슬림·감량 방향",
-  recomposition: "♻️ 재구성 방향",
-  maintain: "✅ 유지",
+const DIRECTION_KEY: Record<string, TranslationKey> = {
+  bulk_up: "direction.bulk_up",
+  slim_down: "direction.slim_down",
+  recomposition: "direction.recomposition",
+  maintain: "direction.maintain",
 };
 
-// 목표 대비 방향: 키우기 / 줄이기 / 데피니션 / 유지
-const GOAL_ACTION_BADGE: Record<string, { label: string; cls: string }> = {
-  grow: { label: "키우기", cls: "badge-info" },
-  reduce: { label: "줄이기", cls: "badge-warning" },
-  definition: { label: "데피니션", cls: "badge-success" },
-  maintain: { label: "유지", cls: "badge-success" },
+// 목표 대비 방향 배지: label은 t()로, cls만 고정
+const GOAL_ACTION_BADGE: Record<string, { key: TranslationKey; cls: string }> = {
+  grow: { key: "goalaction.grow", cls: "badge-info" },
+  reduce: { key: "goalaction.reduce", cls: "badge-warning" },
+  definition: { key: "goalaction.definition", cls: "badge-success" },
+  maintain: { key: "goalaction.maintain", cls: "badge-success" },
 };
 
-const ANGLE_LABEL: Record<string, string> = {
-  front: "정면",
-  back: "후면",
-  side: "측면",
-  left: "좌측면",
-  right: "우측면",
-  side_left: "좌측면",
-  side_right: "우측면",
+const ANGLE_KEY: Record<string, TranslationKey> = {
+  front: "angle.front",
+  back: "angle.back",
+  side: "angle.side",
+  left: "angle.side",
+  right: "angle.side",
+  side_left: "angle.side",
+  side_right: "angle.side",
 };
 
 // 촬영한 사진 슬라이더 — 여러 각도면 좌우로 넘겨서 보기
 function PhotoCarousel({ photos }: { photos: { angle: string; url: string }[] }) {
+  const { t } = useI18n();
   const [active, setActive] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +73,7 @@ function PhotoCarousel({ photos }: { photos: { angle: string; url: string }[] })
             />
             {p.angle && (
               <span className="absolute top-3 left-3 text-xs px-2.5 py-1 rounded-md bg-black/60 text-white tracking-wide backdrop-blur-sm">
-                {ANGLE_LABEL[p.angle] ?? p.angle}
+                {ANGLE_KEY[p.angle] ? t(ANGLE_KEY[p.angle]) : p.angle}
               </span>
             )}
           </div>
@@ -94,12 +97,12 @@ function PhotoCarousel({ photos }: { photos: { angle: string; url: string }[] })
   );
 }
 
-// 영어 라벨(크게) + 한국어(작게) 형식
+// 영어 라벨(크게) + 서브 라벨(작게). 서브 라벨은 비어있으면 숨긴다(영어 모드).
 function BiLabel({ en, ko, color, className = "" }: { en: string; ko: string; color?: string; className?: string }) {
   return (
     <div className={className}>
       <p className="label" style={color ? { color } : undefined}>{en}</p>
-      <p className="text-xs text-text-secondary tracking-wide mt-0.5">{ko}</p>
+      {ko && <p className="text-xs text-text-secondary tracking-wide mt-0.5">{ko}</p>}
     </div>
   );
 }
@@ -107,6 +110,7 @@ function BiLabel({ en, ko, color, className = "" }: { en: string; ko: string; co
 export default function ScanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, lang } = useI18n();
   const [session, setSession] = useState<ScanSession | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -189,7 +193,7 @@ export default function ScanDetailPage() {
     try {
       const blob = await generateShareCardBlob(
         report.headline_stats,
-        new Date(session.scan_date).toLocaleDateString("ko-KR")
+        new Date(session.scan_date).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR")
       );
       if (blob) await shareOrDownloadCard(blob, `swolemeter-${session.id}.png`);
     } finally {
@@ -197,24 +201,26 @@ export default function ScanDetailPage() {
     }
   };
 
-  if (!session) return <p className="text-sm text-text-secondary">불러오는 중...</p>;
+  if (!session) return <p className="text-sm text-text-secondary">{t("common.loading")}</p>;
 
   const stats = report?.headline_stats;
+  const subFat = t("result.body_fat_sub");
+  const subSym = t("result.symmetry_sub");
+  const subGoal = t("result.goal_match_sub");
 
   return (
     <div className="space-y-8">
       <div>
-        <p className="label">Analysis Result</p>
-        <h1 className="hero-headline-kr text-text-primary mt-1">분석 결과</h1>
-        <p className="text-sm text-text-secondary mt-2">{STATUS_LABEL[session.status] ?? session.status}</p>
+        <p className="label">{t("result.tag")}</p>
+        <h1 className="hero-headline-kr text-text-primary mt-1">{t("result.title")}</h1>
+        <p className="text-sm text-text-secondary mt-2">{STATUS_KEY[session.status] ? t(STATUS_KEY[session.status]) : session.status}</p>
       </div>
 
       {/* 미성년자 보호 안내 */}
       {user?.is_minor && (
         <div className="card" style={{ borderColor: "var(--color-accent-cyan)" }}>
           <p className="text-xs text-text-secondary leading-relaxed">
-            💙 성장기에는 체형이 계속 변합니다. 이 수치는 재미와 동기부여를 위한 추정치일 뿐이니
-            일희일비하지 말고, 건강하게 꾸준히 운동하는 것에 집중해요.
+            {t("result.minor_notice")}
           </p>
         </div>
       )}
@@ -224,7 +230,7 @@ export default function ScanDetailPage() {
 
       {session.status === "processing" && (
         <p className="text-sm text-text-secondary">
-          AI가 사진을 분석하고 있습니다. 잠시만 기다려주세요 (자동으로 갱신됩니다)...
+          {t("result.processing_msg")}
         </p>
       )}
 
@@ -232,11 +238,11 @@ export default function ScanDetailPage() {
         <div className="space-y-3">
           <div className="card" style={{ borderColor: "var(--color-accent-red)" }}>
             <p className="text-sm text-accent-red whitespace-pre-line leading-relaxed">
-              {session.error_message ?? "분석에 실패했습니다"}
+              {session.error_message ?? t("capture.analyze_fail")}
             </p>
           </div>
           <Link href="/scan/new" className="btn-primary inline-block text-center">
-            다시 촬영하기
+            {t("result.retry_capture")}
           </Link>
         </div>
       )}
@@ -253,10 +259,10 @@ export default function ScanDetailPage() {
               }}
             />
             <div className="relative">
-              <p className="label">Ranked In Top</p>
-              <p className="text-sm text-text-secondary tracking-widest mt-0.5">상위</p>
+              <p className="label">{t("result.ranked_top")}</p>
+              <p className="text-sm text-text-secondary tracking-widest mt-0.5">{t("result.ranked_top_sub")}</p>
               {stats.percentile === null ? (
-                <p className="text-text-dim text-sm mt-4">데이터 없음</p>
+                <p className="text-text-dim text-sm mt-4">{t("result.no_data")}</p>
               ) : (
                 <p
                   className="display-number text-accent-cyan cyan-glow mt-2"
@@ -272,20 +278,20 @@ export default function ScanDetailPage() {
           {/* 3대 수치 — 바디팻 / 대칭 / 목표 일치율 (목표 있을 때만 3열) */}
           <div className={`grid ${stats.sync_rate !== null ? "grid-cols-3" : "grid-cols-2"} gap-3 text-center`}>
             <div className="card py-4 px-2">
-              <BiLabel en="Body Fat" ko="체지방" className="mb-2" />
+              <BiLabel en={t("result.body_fat")} ko={subFat} className="mb-2" />
               <p className="display-number text-3xl" style={{ color: "#39FF14" }}>
                 {stats.body_fat_estimate_pct ?? "-"}<span className="text-lg">%</span>
               </p>
             </div>
             <div className="card py-4 px-2">
-              <BiLabel en="Symmetry" ko="대칭" className="mb-2" />
+              <BiLabel en={t("result.symmetry")} ko={subSym} className="mb-2" />
               <p className="display-number text-3xl text-accent-cyan">
                 {stats.symmetry_score ?? "-"}
               </p>
             </div>
             {stats.sync_rate !== null && (
               <div className="card py-4 px-2" style={{ borderColor: "#FF6B35" }}>
-                <BiLabel en="Goal Match" ko="목표 일치율" color="#FF6B35" className="mb-2" />
+                <BiLabel en={t("result.goal_match")} ko={subGoal} color="#FF6B35" className="mb-2" />
                 <p className="display-number text-3xl" style={{ color: "#FF6B35" }}>
                   {stats.sync_rate}<span className="text-lg">%</span>
                 </p>
@@ -293,27 +299,27 @@ export default function ScanDetailPage() {
             )}
           </div>
 
-          {/* 신체 총평 — 목표와 무관한 전체적·객관적 평가 (먼저 표시) */}
+          {/* 신체 총평 */}
           <div className="card" style={{ borderColor: "var(--color-accent-cyan)", background: "rgba(0,184,255,0.06)" }}>
-            <p className="section-label mb-2" style={{ color: "var(--color-accent-cyan)" }}>Overall <span className="sub">· 신체 총평</span></p>
+            <p className="section-label mb-2" style={{ color: "var(--color-accent-cyan)" }}>{t("result.overall")} <span className="sub">{t("result.overall_sub")}</span></p>
             <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">{report.summary}</p>
           </div>
 
-          {/* 목표 대비 분석 (목표가 설정된 경우, 총평 다음에 표시) */}
+          {/* 목표 대비 분석 */}
           {report.goal_comparison?.feedback && (
             <div className="card" style={{ borderColor: "#FF6B35" }}>
               <div className="flex items-center gap-2 mb-2">
                 <p className="section-label" style={{ color: "#FF6B35" }}>
-                  Goal Analysis <span className="sub">· 목표 대비 분석</span>
+                  {t("result.goal_analysis")} <span className="sub">{t("result.goal_analysis_sub")}</span>
                 </p>
                 {report.goal_comparison.direction && (
                   <span className="text-xs px-2 py-0.5 rounded badge-warning">
-                    {DIRECTION_LABEL[report.goal_comparison.direction] ?? report.goal_comparison.direction}
+                    {DIRECTION_KEY[report.goal_comparison.direction] ? t(DIRECTION_KEY[report.goal_comparison.direction]) : report.goal_comparison.direction}
                   </span>
                 )}
               </div>
               {report.goal_comparison.goal_text && (
-                <p className="text-xs text-text-secondary mb-2">🎯 목표: {report.goal_comparison.goal_text}</p>
+                <p className="text-xs text-text-secondary mb-2">{t("result.goal_prefix").replace("{text}", report.goal_comparison.goal_text)}</p>
               )}
               <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
                 {report.goal_comparison.feedback}
@@ -323,7 +329,7 @@ export default function ScanDetailPage() {
 
           {/* 보완이 필요한 부위 */}
           <div>
-            <p className="section-label mb-3">Weak Points <span className="sub">· 보완 부위</span></p>
+            <p className="section-label mb-3">{t("result.weak_points")} <span className="sub">{t("result.weak_points_sub")}</span></p>
             <ul className="space-y-2">
               {report.weak_points.map((wp, i) => {
                 const isReduce = wp.goal_action === "reduce";
@@ -334,16 +340,16 @@ export default function ScanDetailPage() {
                   <li key={i} className="card relative pl-5 overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: barColor }} />
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-text-primary">{muscleLabel(wp.part)}</span>
+                      <span className="text-sm font-medium text-text-primary">{muscleLabel(wp.part, lang)}</span>
                       {actionBadge ? (
                         <span className={`text-xs px-2 py-0.5 rounded-md ${actionBadge.cls}`}>
-                          {actionBadge.label}
+                          {t(actionBadge.key)}
                         </span>
                       ) : (
                         <span
                           className={`text-xs px-2 py-0.5 rounded-md ${isMinor ? "badge-success" : "badge-warning"}`}
                         >
-                          {isMinor ? "미세 조정" : "보완 필요"}
+                          {isMinor ? t("result.badge_minor_adjust") : t("result.badge_need_work")}
                         </span>
                       )}
                     </div>
@@ -356,7 +362,7 @@ export default function ScanDetailPage() {
 
           {exercises.length > 0 && (
             <div>
-              <p className="section-label mb-3">Recommended <span className="sub">· 추천 운동</span></p>
+              <p className="section-label mb-3">{t("result.recommended")} <span className="sub">{t("result.recommended_sub")}</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {exercises.map((ex) => (
                   <div key={ex.id} className="card space-y-2">
@@ -369,7 +375,7 @@ export default function ScanDetailPage() {
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                       />
                     )}
-                    <p className="text-sm font-medium text-text-primary">{ex.name_ko || ex.name_en}</p>
+                    <p className="text-sm font-medium text-text-primary">{lang === "en" ? ex.name_en : (ex.name_ko || ex.name_en)}</p>
                     <p className="text-xs text-text-secondary">{ex.primary_muscles.join(", ")}</p>
                     {ex.youtube_video_ids.slice(0, 2).map((videoId) => (
                       <iframe
@@ -388,18 +394,20 @@ export default function ScanDetailPage() {
 
           {report.recommended_routine && report.recommended_routine.items.length > 0 && (
             <div>
-              <p className="section-label mb-3">Routine <span className="sub">· 추천 루틴</span></p>
+              <p className="section-label mb-3">{t("result.routine")} <span className="sub">{t("result.routine_sub")}</span></p>
               <div className="card divide-y" style={{ padding: 0 }}>
                 {report.recommended_routine.items.map((item, i) => (
                   <div key={i} className="flex items-center justify-between px-5 py-3 text-sm" style={{ borderColor: "var(--color-border)" }}>
                     <div>
                       <p className="font-medium text-text-primary">{item.exercise_name}</p>
                       <p className="text-xs" style={{ color: "#00E5FF" }}>
-                        {muscleLabel(item.target_part)} 타겟
+                        {t("result.target_suffix").replace("{part}", muscleLabel(item.target_part, lang))}
                       </p>
                     </div>
                     <span className="badge-info text-xs px-2 py-1 rounded-md font-display">
-                      {item.duration_minutes != null ? `${item.duration_minutes}분` : `${item.sets}세트 × ${item.reps}회`}
+                      {item.duration_minutes != null
+                        ? t("result.minutes").replace("{n}", String(item.duration_minutes))
+                        : t("result.sets_reps").replace("{sets}", String(item.sets)).replace("{reps}", String(item.reps))}
                     </span>
                   </div>
                 ))}
@@ -409,10 +417,10 @@ export default function ScanDetailPage() {
 
           <div className="space-y-3 pt-2">
             <button onClick={handleShare} disabled={sharing} className="btn-primary disabled:opacity-50">
-              {sharing ? "이미지 생성 중..." : "📤 결과 공유하기"}
+              {sharing ? t("result.sharing") : t("result.share")}
             </button>
             <Link href="/scan/new" className="btn-secondary block text-center">
-              다시 분석하기
+              {t("result.reanalyze")}
             </Link>
           </div>
         </div>

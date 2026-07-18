@@ -30,7 +30,7 @@ def test_goal_text_update_preserves_reference_image(client, monkeypatch, signup)
     headers = _signup(signup, "goalpreserve@example.com")
     goal = client.post("/goals", json={"goal_text": "초기 목표"}, headers=headers).json()
 
-    monkeypatch.setattr(vision_service, "describe_goal_image", lambda db, image_bytes: "")
+    monkeypatch.setattr(vision_service, "describe_goal_image", lambda db, image_bytes, lang="ko": "")
     with open(FIXTURE_IMAGE, "rb") as f:
         client.post(
             f"/goals/{goal['id']}/reference-image",
@@ -95,7 +95,7 @@ def test_goal_reference_image_adjusts_goal_text(client, monkeypatch, signup):
     goal = client.post("/goals", json={"goal_text": "원래 목표"}, headers=headers).json()
 
     monkeypatch.setattr(
-        vision_service, "describe_goal_image", lambda db, image_bytes: "어깨 넓고 허리 가는 역삼각형 체형"
+        vision_service, "describe_goal_image", lambda db, image_bytes, lang="ko": "어깨 넓고 허리 가는 역삼각형 체형"
     )
 
     with open(FIXTURE_IMAGE, "rb") as f:

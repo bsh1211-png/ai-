@@ -7,7 +7,7 @@ from google.genai import errors
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.core.constants import ANALYSIS_DISCLAIMER
+from app.core.constants import ANALYSIS_DISCLAIMER, ANALYSIS_DISCLAIMER_EN
 from app.models.quota import ApiQuotaEvent, QuotaEventType
 
 logger = logging.getLogger(__name__)
@@ -38,8 +38,20 @@ def _allowed_muscle_tags(category: str | None) -> list[str]:
     return CATEGORY_MUSCLE_TAGS.get(category or "full_body", CATEGORY_MUSCLE_TAGS["full_body"])
 
 
-def _build_system_instruction(category: str | None, is_minor: bool = False) -> str:
+def _lang_directive(lang: str) -> str:
+    if lang == "en":
+        return (
+            "\n\n[LANGUAGE] Write ALL user-facing text — overall_comment, every weak_points[].comment, "
+            "goal_alignment.feedback, and body_part_assessment values — in natural, fluent English. "
+            "Do NOT use Korean. Keep JSON keys and enum values (safe/explicit, grow/reduce/definition/maintain, "
+            "bulk_up/slim_down/recomposition/maintain, low/medium/high) exactly as specified in English."
+        )
+    return "\n\n[LANGUAGE] 모든 사용자 대상 텍스트는 자연스러운 한국어로 작성한다."
+
+
+def _build_system_instruction(category: str | None, is_minor: bool = False, lang: str = "ko") -> str:
     allowed_tags = _allowed_muscle_tags(category)
+    disclaimer = ANALYSIS_DISCLAIMER_EN if lang == "en" else ANALYSIS_DISCLAIMER
     if is_minor:
         tone_rules = (
             "사용자는 미성년자다. 점수·수치(percentile, 체지방 등)는 아래 기준대로 정직하고 깐깐하게 매기되, "
@@ -65,7 +77,7 @@ def _build_system_instruction(category: str | None, is_minor: bool = False) -> s
 - content_rating: 위 기준에서 정상 체형 사진이면 "safe", 성기/성행위 등 노골적 성적 콘텐츠가 포함되면 "explicit"으로 표기한다.
 - overall_comment는 '목표와 무관하게' 현재 몸 자체에 대한 전체적이고 객관적인 평가를 담는다. 위에서 정한 톤을 그대로 적용해
   전반적 인상·비율·발달 정도·약점을 구체적으로 콕콕 짚는다 (두루뭉술한 칭찬·위로성 멘트 금지, 진짜 뛰어난 부분만 짧게 인정). 목표(워너비) 관련 이야기는 여기 넣지 말고 goal_alignment.feedback에만 담는다.
-- overall_comment 마지막 문장에는 반드시 다음을 포함한다: "{ANALYSIS_DISCLAIMER}"
+- overall_comment 마지막 문장에는 반드시 다음을 포함한다: "{disclaimer}"
 - 사진에 실제로 보이는 부위만 평가한다. weak_points의 part 값은 반드시 다음 목록 중에서만 고른다
   (이 사진의 분석 범위 밖의 부위는 절대 언급하지 말 것): {", ".join(allowed_tags)}
 - headline_stats.percentile은 1~99 사이 정수로, "전 세계 동성 일반 인구 대비 상위 X%"를 의미한다 (작을수록 상위=우수).
@@ -105,6 +117,7 @@ def _build_system_instruction(category: str | None, is_minor: bool = False) -> s
     "is_estimate": true
   }}
 }}
+{_lang_directive(lang)}
 """
 
 HISTORY_SUMMARY_SYSTEM_INSTRUCTION = """너는 사용자의 누적된 신체 분석 기록을 보고 변화 추이를 짚어주는 피트니스 코치다.
@@ -230,6 +243,7 @@ def analyze_body_image(
     goal_image_bytes: bytes | None = None,
     category: str | None = None,
     is_minor: bool = False,
+    lang: str = "ko",
 ) -> dict:
     prompt = _build_prompt(pose_summary, goal_text, goal_image_bytes is not None)
     contents: list = [genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
@@ -237,20 +251,24 @@ def analyze_body_image(
         contents.append(genai.types.Part.from_bytes(data=goal_image_bytes, mime_type="image/jpeg"))
     contents.append(prompt)
 
-    result = generate_with_fallback(db, contents, _build_system_instruction(category, is_minor))
+    result = generate_with_fallback(db, contents, _build_system_instruction(category, is_minor, lang))
     if str(result.get("content_rating", "safe")).lower() == "explicit":
         raise ExplicitContentDetected()
     return result
 
 
-def generate_history_summary(db: Session, history_context: str) -> str:
-    result = generate_with_fallback(db, [history_context], HISTORY_SUMMARY_SYSTEM_INSTRUCTION)
+def generate_history_summary(db: Session, history_context: str, lang: str = "ko") -> str:
+    result = generate_with_fallback(
+        db, [history_context], HISTORY_SUMMARY_SYSTEM_INSTRUCTION + _lang_directive(lang)
+    )
     return result.get("summary", "")
 
 
-def describe_goal_image(db: Session, image_bytes: bytes) -> str:
+def describe_goal_image(db: Session, image_bytes: bytes, lang: str = "ko") -> str:
     contents = [genai.types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
-    result = generate_with_fallback(db, contents, GOAL_IMAGE_DESCRIPTION_SYSTEM_INSTRUCTION)
+    result = generate_with_fallback(
+        db, contents, GOAL_IMAGE_DESCRIPTION_SYSTEM_INSTRUCTION + _lang_directive(lang)
+    )
     if str(result.get("content_rating", "safe")).lower() == "explicit":
         raise ExplicitContentDetected()
     return result.get("goal_text", "")

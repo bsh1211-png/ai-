@@ -24,3 +24,7 @@ client_secret_*.json
 # IDE
 .vscode/
 .idea/
+
+# 개인 백업 코드/시크릿 (절대 커밋 금지)
+Backup-codes-*.txt
+*backup*code*

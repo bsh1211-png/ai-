@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n";
 import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
@@ -17,12 +18,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-bg">
-        <AuthProvider>
-          <Nav />
-          <main className="flex-1 w-full max-w-[440px] sm:max-w-[600px] lg:max-w-[720px] mx-auto px-5 sm:px-8 pt-[72px] sm:pt-20 pb-16">
-            {children}
-          </main>
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <Nav />
+            <main className="flex-1 w-full max-w-[440px] sm:max-w-[600px] lg:max-w-[720px] mx-auto px-5 sm:px-8 pt-[72px] sm:pt-20 pb-16">
+              {children}
+            </main>
+          </AuthProvider>
+        </I18nProvider>
       </body>
       {/* Google AdSense 사이트 인증 스크립트 (모든 페이지에 1회 로드) */}
       <Script

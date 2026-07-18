@@ -14,7 +14,7 @@ def _signup_and_consent(client, signup, email="historyuser@example.com") -> dict
 
 
 def _complete_one_scan(client, headers, monkeypatch, category="upper"):
-    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False):
+    def fake_analyze(db, image_bytes, pose_summary, goal_text, goal_image_bytes=None, category=None, is_minor=False, lang="ko"):
         return {
             "body_part_assessment": {"lats": "코멘트"},
             "weak_points": [{"part": "lats", "severity": "low", "comment": "코멘트"}],
@@ -54,14 +54,14 @@ def test_dashboard_summary_success_and_cache(client, monkeypatch, signup):
     _complete_one_scan(client, headers, monkeypatch, category="upper")
     _complete_one_scan(client, headers, monkeypatch, category="lower")
 
-    monkeypatch.setattr(vision_service, "generate_history_summary", lambda db, ctx: "종합 총평입니다")
+    monkeypatch.setattr(vision_service, "generate_history_summary", lambda db, ctx, lang="ko": "종합 총평입니다")
 
     first = client.get("/history/dashboard-summary", headers=headers).json()
     assert first["has_enough_data"] is True
     assert first["summary"] == "종합 총평입니다"
 
     # 캐시된 값이 재사용되어야 하므로, Gemini 호출이 다시 실패하더라도 같은 값이 나와야 한다
-    def fail(db, ctx):
+    def fail(db, ctx, lang="ko"):
         raise AssertionError("캐시가 있으면 다시 호출하면 안 됨")
 
     monkeypatch.setattr(vision_service, "generate_history_summary", fail)
@@ -74,7 +74,7 @@ def test_dashboard_summary_rate_limited_is_not_cached(client, monkeypatch, signu
     _complete_one_scan(client, headers, monkeypatch, category="upper")
     _complete_one_scan(client, headers, monkeypatch, category="lower")
 
-    def raise_rate_limited(db, ctx):
+    def raise_rate_limited(db, ctx, lang="ko"):
         raise vision_service.StillAnalyzing()
 
     monkeypatch.setattr(vision_service, "generate_history_summary", raise_rate_limited)
@@ -82,6 +82,6 @@ def test_dashboard_summary_rate_limited_is_not_cached(client, monkeypatch, signu
     assert "많아" in first["summary"]
 
     # 실패는 캐싱되지 않아야 하므로, 다음 호출에서 다시 Gemini를 시도해 성공하면 그 값이 나와야 한다
-    monkeypatch.setattr(vision_service, "generate_history_summary", lambda db, ctx: "회복 후 총평")
+    monkeypatch.setattr(vision_service, "generate_history_summary", lambda db, ctx, lang="ko": "회복 후 총평")
     second = client.get("/history/dashboard-summary", headers=headers).json()
     assert second["summary"] == "회복 후 총평"

@@ -1,3 +1,5 @@
+import type { Lang } from "./translations";
+
 export const MUSCLE_KO: Record<string, string> = {
   chest: "가슴",
   shoulders: "어깨",
@@ -18,7 +20,13 @@ export const MUSCLE_KO: Record<string, string> = {
   adductors: "내전근",
 };
 
-export function muscleLabel(part: string): string {
+function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// 한국어: "가슴 (chest)", 영어: "Chest"
+export function muscleLabel(part: string, lang: Lang = "ko"): string {
+  if (lang === "en") return titleCase(part);
   const ko = MUSCLE_KO[part.toLowerCase()];
   return ko ? `${ko} (${part})` : part;
 }
@@ -28,3 +36,14 @@ export const CATEGORY_KO: Record<string, string> = {
   upper: "상체",
   lower: "하체",
 };
+
+const CATEGORY_EN: Record<string, string> = {
+  full_body: "Full Body",
+  upper: "Upper Body",
+  lower: "Lower Body",
+};
+
+export function categoryLabel(category: string, lang: Lang = "ko"): string {
+  const map = lang === "en" ? CATEGORY_EN : CATEGORY_KO;
+  return map[category] ?? category;
+}
