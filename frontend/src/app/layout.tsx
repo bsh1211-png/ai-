@@ -8,6 +8,10 @@ import { Nav } from "@/components/nav";
 export const metadata: Metadata = {
   title: "Swolemeter",
   description: "내 몸을 분석하고 목표 몸에 맞는 운동을 추천받는 개인 PT 에이전트",
+  // Google AdSense 사이트 소유권 확인용 메타 태그
+  other: {
+    "google-adsense-account": "ca-pub-7494630317472263",
+  },
 };
 
 export default function RootLayout({
