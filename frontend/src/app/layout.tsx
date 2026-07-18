@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { Nav } from "@/components/nav";
@@ -23,6 +24,13 @@ export default function RootLayout({
           </main>
         </AuthProvider>
       </body>
+      {/* Google AdSense 사이트 인증 스크립트 (모든 페이지에 1회 로드) */}
+      <Script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7494630317472263"
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+      />
     </html>
   );
 }
